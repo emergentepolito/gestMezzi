@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>GestMezzi v3 — Dashboard Avanzata</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  /* Superfici — slate freddo, pulito e moderno */
+  --bg:#0b1114;--bg2:#111a1e;--bg3:#172329;--bg4:#1f2d34;
+  --border:rgba(255,255,255,.07);--border2:rgba(110,231,135,.30);
+  /* Brand — verde campo fresco + ambra raccolto */
+  --green:#6ee787;--green2:#9df5ac;--gdim:rgba(110,231,135,.10);
+  --amber:#ffb938;--red:#ff6b6b;--blue:#5cc8ff;--purple:#c4a2ff;
+  --text:#eaf2ee;--text2:rgba(234,242,238,.60);--text3:rgba(234,242,238,.34);
+  --mono:'DM Mono',monospace;--sans:'Syne',sans-serif;
+  --body:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --r:12px;--r2:18px;--r3:24px;
+  --shadow:0 4px 24px rgba(0,0,0,.28);--shadow-lg:0 16px 48px rgba(0,0,0,.4);
+  --grad-green:linear-gradient(135deg,#6ee787,#3db86a);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:
+    radial-gradient(900px 500px at 85% -5%,rgba(110,231,135,.06),transparent 60%),
+    radial-gradient(700px 400px at 5% 0%,rgba(92,200,255,.05),transparent 55%),
+    var(--bg);
+  background-attachment:fixed;
+  color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+
+/* ── HEADER ── */
+.hdr{position:sticky;top:0;z-index:200;background:rgba(11,17,20,.82);backdrop-filter:blur(20px) saturate(140%);border-bottom:1px solid var(--border);padding:0 22px;display:flex;align-items:center;justify-content:space-between;height:58px}
+.logo{font-family:var(--sans);font-weight:800;font-size:16px;letter-spacing:-.03em;color:var(--text);display:flex;align-items:center;gap:9px}
+.logo-dot{width:9px;height:9px;background:var(--grad-green);border-radius:50%;box-shadow:0 0 12px var(--green);animation:pulse 2.4s ease infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.78)}}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.hdr-btn{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:7px 13px;color:var(--text2);font-family:var(--body);font-weight:500;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s}
+.hdr-btn:hover{border-color:var(--border2);color:var(--text);background:var(--gdim)}
+.hdr-btn.active{border-color:transparent;color:#06120a;background:var(--grad-green);font-weight:700}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:4px;border-bottom:1px solid var(--border);background:rgba(17,26,30,.6);backdrop-filter:blur(12px);padding:8px 16px;position:sticky;top:58px;z-index:190;overflow-x:auto}
+.tab-item{padding:9px 15px;font-size:12.5px;font-weight:600;color:var(--text3);cursor:pointer;border-radius:10px;transition:all .18s;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.tab-item.active{color:var(--green2);background:var(--gdim)}
+.tab-item:hover:not(.active){color:var(--text2);background:rgba(255,255,255,.03)}
+.tab-badge{background:var(--red);color:#fff;border-radius:20px;padding:1px 7px;font-size:9px;font-weight:700;font-family:var(--body)}
+
+/* ── LOAD ZONE ── */
+.load-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:20px}
+.load-box{background:linear-gradient(160deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:var(--r3);padding:52px 44px;text-align:center;max-width:480px;width:100%;box-shadow:var(--shadow-lg)}
+.load-box h2{font-family:var(--sans);font-weight:800;font-size:22px;color:var(--text);margin:18px 0 8px;letter-spacing:-.02em}
+.load-box p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:22px}
+.btn-load{background:var(--grad-green);color:#06120a;border:none;border-radius:var(--r);padding:13px 30px;font-family:var(--body);font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .2s;box-shadow:0 6px 20px rgba(110,231,135,.25)}
+.btn-load:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(110,231,135,.35)}
+.load-icon{font-size:44px}
+
+/* ── MAIN LAYOUT ── */
+.main{display:none;flex-direction:column}
+.main.on{display:flex}
+.panels{display:flex;flex-direction:column}
+
+/* ── FILTERS BAR ── */
+.filters{background:rgba(17,26,30,.6);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 22px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;position:sticky;top:106px;z-index:180}
+.fg{display:flex;flex-direction:column;gap:5px}
+.flabel{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.fg select,.fg input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--body);font-size:12.5px;padding:7px 11px;transition:border .2s;min-width:140px}
+.fg select:focus,.fg input:focus{outline:none;border-color:var(--green)}
+.fg select option{background:var(--bg3)}
+.period-btns{display:flex;gap:5px;flex-wrap:wrap}
+.pbt{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:6px 11px;color:var(--text3);font-family:var(--body);font-weight:600;font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.pbt:hover{border-color:var(--border2);color:var(--text2)}
+.pbt.active{background:var(--gdim);border-color:transparent;color:var(--green2)}
+.filter-reset{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 13px;color:var(--text3);font-family:var(--body);font-size:11px;cursor:pointer;margin-left:auto}
+.filter-reset:hover{color:var(--amber);border-color:var(--amber)}
+
+/* ── CONTENT ── */
+.content{padding:20px 22px;display:none}
+.content.on{display:block;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:linear-gradient(160deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:var(--r2);padding:18px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(120px 80px at 100% 0,var(--kpi-glow,rgba(110,231,135,.12)),transparent 70%);pointer-events:none}
+.kpi-icon{font-size:22px;margin-bottom:10px;display:inline-flex;width:42px;height:42px;align-items:center;justify-content:center;background:var(--kpi-glow,var(--gdim));border-radius:12px}
+.kpi-val{font-family:var(--sans);font-size:26px;font-weight:800;color:var(--text);line-height:1;letter-spacing:-.02em}
+.kpi-lbl{font-size:11px;color:var(--text3);margin-top:6px;font-weight:600;letter-spacing:.01em}
+.kpi-sub{font-size:11px;color:var(--text2);margin-top:4px}
+.kpi.red{--kpi-color:var(--red);--kpi-glow:rgba(255,107,107,.14)}
+.kpi.amber{--kpi-color:var(--amber);--kpi-glow:rgba(255,185,56,.14)}
+.kpi.blue{--kpi-color:var(--blue);--kpi-glow:rgba(92,200,255,.14)}
+.kpi.purple{--kpi-color:var(--purple);--kpi-glow:rgba(196,162,255,.14)}
+
+/* ── GRID LAYOUTS ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.row12{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.row21{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.row2,.row3,.row12,.row21{grid-template-columns:1fr}}
+
+/* ── CARDS ── */
+.card{background:linear-gradient(160deg,var(--bg2),rgba(23,35,41,.6));border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--shadow)}
+.card-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--text);display:flex;align-items:center;gap:8px;letter-spacing:-.01em}
+.card-sub{font-size:11px;color:var(--text3)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+.tbl th{padding:10px 14px;text-align:left;color:var(--text3);font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--body)}
+.tbl td{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:var(--gdim)}
+.tbl-scroll{overflow-x:auto;max-height:340px;overflow-y:auto}
+
+/* ── BADGES / CHIPS ── */
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;font-family:var(--body)}
+.badge.green{background:rgba(110,231,135,.16);color:var(--green2)}
+.badge.amber{background:rgba(255,185,56,.16);color:var(--amber)}
+.badge.red{background:rgba(255,107,107,.18);color:var(--red)}
+.badge.blue{background:rgba(92,200,255,.16);color:var(--blue)}
+.badge.purple{background:rgba(196,162,255,.16);color:var(--purple)}
+.badge.gray{background:rgba(255,255,255,.07);color:var(--text2)}
+
+/* ── BAR CHART ── */
+.bar-chart{padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-lbl{width:130px;font-size:11px;color:var(--text2);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.bar-val{width:70px;text-align:right;font-size:11px;color:var(--text2);flex-shrink:0}
+
+/* ── DONUT ── */
+.donut-wrap{display:flex;align-items:center;gap:20px;padding:16px}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:6px;flex:1}
+.dl-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)}
+.dl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dl-pct{margin-left:auto;color:var(--text);font-size:12px}
+
+/* ── ALERT CARDS ── */
+.alert-card{background:var(--bg3);border-left:3px solid var(--red);border-radius:0 var(--r) var(--r) 0;padding:12px 15px;margin-bottom:9px}
+.alert-card.amber{border-left-color:var(--amber)}
+.alert-card.green{border-left-color:var(--green)}
+.alert-card h4{font-size:12px;color:var(--text);margin-bottom:3px}
+.alert-card p{font-size:11px;color:var(--text2)}
+.alert-card .meta{font-size:10px;color:var(--text3);margin-top:4px;display:flex;gap:12px}
+
+/* ── TREND LINE (SVG) ── */
+.trend-svg{width:100%;height:120px}
+
+/* ── UPLOAD MODE ── */
+.upload-section{padding:20px}
+.mode-sw{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.mode-btn{background:none;border:none;padding:11px;color:var(--text2);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .2s}
+.mode-btn.active{background:var(--gdim);color:var(--green2)}
+.mode-btn:first-child{border-right:1px solid var(--border)}
+.drop-zone{border:1.5px dashed var(--border2);border-radius:var(--r2);padding:28px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gdim);position:relative;margin-bottom:12px}
+.drop-zone:hover{border-color:var(--green)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg2{display:flex;flex-direction:column;gap:4px}
+.fg2.full{grid-column:1/-1}
+.fg2 label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.fg2 input,.fg2 select,.fg2 textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 10px}
+.fg2 input:focus,.fg2 select:focus{outline:none;border-color:var(--green)}
+.btn-main{width:100%;padding:14px;background:var(--grad-green);color:#06120a;font-family:var(--body);font-size:14px;font-weight:700;border:none;border-radius:var(--r);cursor:pointer;margin-top:10px;transition:all .2s;box-shadow:0 6px 20px rgba(110,231,135,.2)}
+.btn-main:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(110,231,135,.3)}
+.btn-main:disabled{opacity:.35;cursor:not-allowed}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pezzo-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px}
+.btn-add{background:none;border:1px dashed var(--border2);border-radius:var(--r);padding:7px;color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer;width:100%;margin-top:6px}
+.btn-add:hover{border-color:var(--green);color:var(--green2)}
+.result-banner{background:rgba(110,231,135,.08);border:1px solid var(--green);border-radius:var(--r);padding:14px;margin-top:14px;display:flex;align-items:center;gap:12px}
+.btn-dl{background:var(--blue);color:#001a2a;border:none;border-radius:8px;padding:9px 16px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:11px 20px;font-size:12.5px;font-weight:600;color:var(--green2);opacity:0;transition:all .3s;z-index:999;pointer-events:none;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── MEZZO SELECTOR in pdf result ── */
+.mz-pick{background:rgba(232,184,75,.05);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px}
+.mz-lbl{font-size:11px;color:var(--amber);flex-shrink:0}
+.mz-sel{flex:1;background:var(--bg3);border:1px solid rgba(232,184,75,.3);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px}
+.btn-conf{background:var(--amber);color:#1a1000;border:none;border-radius:6px;padding:5px 12px;font-family:var(--mono);font-size:11px;cursor:pointer;font-weight:700}
+.mz-ok{background:rgba(110,231,135,.05);border-bottom:1px solid var(--border);padding:10px 16px;font-size:12px;color:var(--green2);display:flex;align-items:center;gap:10px}
+.btn-chg{background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:10px;color:var(--text3);cursor:pointer;font-family:var(--mono)}
+
+/* empty state */
+.empty{padding:40px;text-align:center;color:var(--text3);font-size:12px}
+
+/* scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── tag anomalia ── */
+.anomaly-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--red);background:rgba(232,80,80,.1);padding:1px 6px;border-radius:4px}
+
+/* ═══════════════════════════════
+   MOBILE RESPONSIVE
+═══════════════════════════════ */
+@media (max-width: 600px) {
+  /* Header */
+  .hdr { padding: 0 10px; height: 50px; }
+  .logo { font-size: 13px; }
+  .hdr-right { gap: 4px; }
+  .hdr-btn { padding: 5px 8px; font-size: 10px; }
+  #xlStatus { display: none; }
+
+  /* Tab bar: scrollabile orizzontalmente */
+  .tab-bar { overflow-x: auto; padding: 0 8px; -webkit-overflow-scrolling: touch; }
+  .tab-item { padding: 10px 12px; font-size: 11px; white-space: nowrap; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  /* Filtri: stack verticale */
+  .filters {
+    flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 10px 12px; top: 94px;
+  }
+  .fg select, .fg input { min-width: unset; width: 100%; font-size: 13px; padding: 8px 10px; }
+  .period-btns { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
+  .pbt { padding: 7px 4px; font-size: 11px; text-align: center; }
+  .filter-reset { margin: 0; }
+
+  /* Content padding */
+  .content { padding: 10px 10px 80px; }
+
+  /* KPI grid: 2 colonne */
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { padding: 12px 10px; }
+  .kpi-val { font-size: 18px; }
+  .kpi-lbl { font-size: 9px; }
+
+  /* Charts: full width */
+  .row2, .row3, .row12, .row21 { grid-template-columns: 1fr; gap: 10px; }
+
+  /* Tables: scrollabili */
+  .tbl-scroll { max-height: 260px; }
+  .tbl td, .tbl th { padding: 6px 8px; font-size: 10px; }
+
+  /* Upload form */
+  .upload-section { padding: 0; }
+  .fgrid { grid-template-columns: 1fr; }
+  .fg2.full { grid-column: 1; }
+  .btn-main { padding: 14px; font-size: 14px; }
+  .btn-add { padding: 12px; font-size: 13px; }
+  .mode-btn { font-size: 13px; padding: 13px 8px; }
+
+  /* Drop zone */
+  .drop-zone { padding: 24px 16px; }
+
+  /* Session bar */
+  #sessionBar .hdr-right { flex-wrap: wrap; }
+
+  /* Pezzo form */
+  .pezzo-item .fgrid { grid-template-columns: 1fr 1fr; }
+
+  /* Mezzo select */
+  .mz-pick { flex-wrap: wrap; gap: 8px; }
+  .mz-sel { min-width: 0; width: 100%; }
+
+  /* Barra sessione */
+  #sessionBar > div { flex-direction: column; align-items: stretch; }
+  #sessionBar > div > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-left: 0; }
+}
+
+/* Touch targets: tutti i bottoni almeno 44px */
+@media (hover: none) {
+  button, .btn-main, .btn-add, .mode-btn, .pbt, .hdr-btn, .tab-item {
+    min-height: 44px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tab-item { min-height: 44px; }
+  select, input { min-height: 44px; font-size: 16px !important; } /* 16px evita zoom iOS */
+  .fg select, .fg input, .fg2 select, .fg2 input, .fg2 textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Scrollbar visibile su mobile */
+.tbl-scroll { -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo"><div class="logo-dot"></div>GestMezzi <span style="font-size:10px;opacity:.4;margin-left:4px">v3</span></div>
+  <div class="hdr-right">
+    <div id="xlStatus" style="font-size:11px;color:var(--text3)">Nessun file caricato</div>
+    <label style="cursor:pointer"><input type="file" accept=".xlsx" onchange="loadExcel(this.files[0])" style="display:none"><div class="hdr-btn">📊 Carica Excel</div></label>
+    <button class="hdr-btn" onclick="downloadExcel()" id="dlBtn" style="display:none">⬇ Scarica Excel</button>
+  </div>
+</header>
+
+<!-- LOAD ZONE (shown before Excel is loaded) -->
+<div class="load-zone" id="loadZone">
+  <div class="load-box">
+    <div class="load-icon">📊</div>
+    <h2>Collega il tuo Excel</h2>
+    <p>Carica <strong>GestMezzi_v3.xlsx</strong> per attivare la dashboard completa con filtri, KPI, analisi costi e alert riparazioni ricorrenti.</p>
+    <label style="cursor:pointer"><input type="file" accept=".xlsx" onchange="loadExcel(this.files[0])" style="display:none"><div class="btn-load">📂 Seleziona GestMezzi_v3.xlsx</div></label>
+  </div>
+</div>
+
+<!-- MAIN INTERFACE -->
+<div class="main" id="mainArea">
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="showTab('dash')" id="t-dash">📊 Dashboard</div>
+    <div class="tab-item" onclick="showTab('alerts')" id="t-alerts">🔴 Alert <span class="tab-badge" id="alertBadge">0</span></div>
+    <div class="tab-item" onclick="showTab('mezzi')" id="t-mezzi">🚜 Mezzi</div>
+    <div class="tab-item" onclick="showTab('storico')" id="t-storico">🔧 Storico</div>
+    <div class="tab-item" onclick="showTab('carburante')" id="t-carburante">⛽ Carburante <span class="tab-badge" id="fuelBadge" style="background:var(--blue);display:none">UMA</span></div>
+    <div class="tab-item" onclick="showTab('scadenze')" id="t-scadenze">📅 Scadenze <span class="tab-badge" id="scadBadge">0</span></div>
+    <div class="tab-item" onclick="showTab('upload')" id="t-upload">📄 Inserimento</div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters" id="filterBar">
+    <div class="fg">
+      <div class="flabel">Categoria</div>
+      <select id="f-cat" onchange="filterCat()">
+        <option value="">Tutte le categorie</option>
+        <option>Trattore</option>
+        <option>Telescopico</option>
+        <option>Carro Miscelatore</option>
+        <option>Rimorchi</option>
+        <option>Escavatore</option>
+        <option>Camion</option>
+        <option>Furgone</option>
+        <option>Imballatrice</option>
+        <option>Pala cigolata</option>
+        <option>Attrezzi trattore</option>
+        <option>Attrezzi merlo</option>
+        <option>Attrezzi escavatore</option>
+        <option>Attrezzi Zootecnici</option>
+        <option>Gruppo Elettrogeno</option>
+        <option>Pulizia</option>
+      </select>
+    </div>
+    <div class="fg">
+      <div class="flabel">Mezzo</div>
+      <select id="f-mezzo" onchange="applyFilters()"><option value="">Tutti i mezzi</option></select>
+    </div>
+    <div class="fg">
+      <div class="flabel">Periodo rapido</div>
+      <div class="period-btns">
+        <button class="pbt" onclick="setPeriod(1,'M')">1M</button>
+        <button class="pbt" onclick="setPeriod(3,'M')">3M</button>
+        <button class="pbt" onclick="setPeriod(6,'M')">6M</button>
+        <button class="pbt active" onclick="setPeriod(12,'M')">1A</button>
+        <button class="pbt" onclick="setPeriod(0,'Y')">Anno</button>
+        <button class="pbt" onclick="setPeriod(0,'ALL')">Tutto</button>
+      </div>
+    </div>
+    <div class="fg">
+      <div class="flabel">Da</div>
+      <input type="date" id="f-da" onchange="applyFilters()">
+    </div>
+    <div class="fg">
+      <div class="flabel">A</div>
+      <input type="date" id="f-a" onchange="applyFilters()">
+    </div>
+    <button class="filter-reset" onclick="resetFilters()">↺ Reset</button>
+  </div>
+
+  <!-- ═══ DASHBOARD TAB ═══ -->
+  <div class="content on" id="p-dash">
+
+    <!-- KPI ROW -->
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-val" id="k-tot">—</div><div class="kpi-lbl">Spesa totale</div><div class="kpi-sub" id="k-tot-sub"></div></div>
+      <div class="kpi amber"><div class="kpi-icon">🔧</div><div class="kpi-val" id="k-int">—</div><div class="kpi-lbl">Interventi</div><div class="kpi-sub" id="k-int-sub"></div></div>
+      <div class="kpi blue"><div class="kpi-icon">🚜</div><div class="kpi-val" id="k-mezzi">—</div><div class="kpi-lbl">Mezzi coinvolti</div></div>
+      <div class="kpi purple"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="k-ricorr">—</div><div class="kpi-lbl">Guasti ricorrenti</div></div>
+      <div class="kpi red"><div class="kpi-icon">🔴</div><div class="kpi-val" id="k-alerts">—</div><div class="kpi-lbl">Alert attivi</div></div>
+      <div class="kpi"><div class="kpi-icon">📈</div><div class="kpi-val" id="k-media">—</div><div class="kpi-lbl">Costo medio/mezzo</div></div>
+    </div>
+
+    <div class="row12">
+      <!-- Spesa per mezzo -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">💰 Costo per mezzo</div><div class="card-sub">Top 10</div></div>
+        <div class="bar-chart" id="chartMezzo"></div>
+      </div>
+      <!-- Spesa per macroarea -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">🔩 Per macroarea</div></div>
+        <div class="donut-wrap" id="chartMacro"></div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <!-- Top componenti -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">🏆 Top componenti sostituiti</div><div class="card-sub">per costo</div></div>
+        <div class="tbl-scroll"><table class="tbl" id="tblComp"><thead><tr><th>#</th><th>Componente</th><th>N°</th><th>Costo €</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <!-- Top fornitori -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">🏪 Performance fornitori</div></div>
+        <div class="tbl-scroll"><table class="tbl" id="tblForn"><thead><tr><th>Fornitore</th><th>Int.</th><th>Spesa €</th><th>%</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- Trend mensile -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">📈 Trend spese mensili</div><div class="card-sub" id="trendSub"></div></div>
+      <div id="trendChart" style="padding:16px 20px 10px"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══ ALERT TAB ═══ -->
+  <div class="content" id="p-alerts">
+    <div style="margin-bottom:16px">
+      <h2 style="font-family:var(--sans);font-size:16px;color:var(--red);margin-bottom:4px">🔴 Alert riparazioni ricorrenti</h2>
+      <p style="font-size:12px;color:var(--text2)">Il sistema controlla automaticamente se lo stesso componente è stato riparato più volte sullo stesso mezzo.</p>
+    </div>
+    <div id="alertList"></div>
+
+    <div style="margin-top:24px">
+      <h3 style="font-family:var(--sans);font-size:14px;color:var(--text);margin-bottom:12px">📋 Storico completo anomalie</h3>
+      <div class="card">
+        <div class="tbl-scroll"><table class="tbl" id="tblAlert"><thead><tr><th>Mezzo</th><th>Componente</th><th>Macroarea</th><th>N° ripetiz.</th><th>Prima data</th><th>Ultima data</th><th>GG tra ripar.</th><th>Costo tot €</th><th>Livello</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MEZZI TAB ═══ -->
+  <div class="content" id="p-mezzi">
+    <div class="row3" id="mezziGrid" style="margin-bottom:16px"></div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">📋 Registro completo mezzi</div></div>
+      <div class="tbl-scroll"><table class="tbl" id="tblMezzi"><thead><tr><th>ID</th><th>Nome</th><th>Categoria</th><th>Marca/Modello</th><th>Anno</th><th>Ore</th><th>Stato</th><th>N° Int.</th><th>Costo tot €</th><th>Ultimo int.</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ═══ STORICO TAB ═══ -->
+  <div class="content" id="p-storico">
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">🔧 Storico interventi</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="srchStor" placeholder="Cerca..." oninput="renderStorico()" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 10px">
+          <div class="card-sub" id="storCount"></div>
+        </div>
+      </div>
+      <div class="tbl-scroll"><table class="tbl" id="tblStor"><thead><tr><th>ID</th><th>Data</th><th>Mezzo</th><th>Macroarea</th><th>Componente</th><th>Tipo</th><th>Fornitore</th><th>N° Doc</th><th>Qtà</th><th>Totale €</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ═══ CARBURANTE TAB ═══ -->
+  <div class="content" id="p-carburante">
+
+    <!-- UMA KPI row -->
+    <div class="kpi-grid" style="margin-bottom:16px" id="umaKpiGrid">
+      <div class="kpi blue"><div class="kpi-icon">📋</div><div class="kpi-val" id="k-uma-assegnato">—</div><div class="kpi-lbl">Assegnazione UMA 2025</div><div class="kpi-sub">litri</div></div>
+      <div class="kpi amber"><div class="kpi-icon">⛽</div><div class="kpi-val" id="k-uma-usato">—</div><div class="kpi-lbl">Consumato 2025</div><div class="kpi-sub" id="k-uma-pct"></div></div>
+      <div class="kpi"><div class="kpi-icon">🟢</div><div class="kpi-val" id="k-uma-residuo">—</div><div class="kpi-lbl">Residuo UMA</div><div class="kpi-sub">litri disponibili</div></div>
+      <div class="kpi purple"><div class="kpi-icon">🚜</div><div class="kpi-val" id="k-uma-mezzi">—</div><div class="kpi-lbl">Mezzi riforniti</div><div class="kpi-sub">nel periodo</div></div>
+      <div class="kpi"><div class="kpi-icon">📊</div><div class="kpi-val" id="k-uma-media">—</div><div class="kpi-lbl">Media L/prelievo</div></div>
+      <div class="kpi red" id="kUmaAlert" style="display:none"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="k-uma-alert-val">—</div><div class="kpi-lbl">Alert UMA</div></div>
+    </div>
+
+    <div class="row12" style="margin-bottom:16px">
+      <!-- Consumo per mezzo -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">🚜 Consumo carburante per mezzo</div><div class="card-sub" id="fuelPeriodSub">2025</div></div>
+        <div class="bar-chart" id="chartFuelMezzo"></div>
+      </div>
+      <!-- Consumo per cisterna -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">🛢 Per cisterna</div></div>
+        <div class="donut-wrap" id="chartFuelCist"></div>
+      </div>
+    </div>
+
+    <div class="row2" style="margin-bottom:16px">
+      <!-- Trend mensile litri -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">📈 Trend mensile litri</div></div>
+        <div id="trendFuel" style="padding:12px 16px 8px"></div>
+      </div>
+      <!-- Top trattoristi -->
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">👤 Consumo per trattorista</div></div>
+        <div class="bar-chart" id="chartFuelTratt"></div>
+      </div>
+    </div>
+
+    <!-- Inserimento prelievo -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">➕ Registra prelievo carburante</div><div class="card-sub">Sostituisce il quadernino</div></div>
+      <div style="padding:14px 16px">
+        <div class="fgrid">
+          <div class="fg2"><label>Data *</label><input type="date" id="f_data"></div>
+          <div class="fg2"><label>Cisterna *</label><select id="f_cist"><option value="">— seleziona —</option></select></div>
+          <div class="fg2"><label>Mezzo *</label><select id="f_mezzo"><option value="">— seleziona —</option></select></div>
+          <div class="fg2"><label>Trattorista *</label><input type="text" id="f_tratt" list="dlTratt" placeholder="es. Antonio"><datalist id="dlTratt"></datalist></div>
+          <div class="fg2"><label>Litri prelevati *</label><input type="number" id="f_litri" placeholder="es. 120" min="0" step="1"></div>
+          <div class="fg2 full"><label>Lavoro svolto / note</label><input type="text" id="f_note" placeholder="es. Aratura campo nord"></div>
+        </div>
+        <button class="btn-main" onclick="saveFuelEntry()" style="margin-top:10px">⛽ Registra prelievo in Excel</button>
+        <div id="fuelSaveRes" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Registro prelievi tabella -->
+    <div class="card">
+      <div class="card-hdr">
+        <div class="card-title">📋 Storico prelievi</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="fuelYearFilter" onchange="renderCarburante()" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px">
+            <option value="2025">2025</option><option value="2024">2024</option><option value="">Tutti</option>
+          </select>
+          <div class="card-sub" id="fuelCount"></div>
+        </div>
+      </div>
+      <div class="tbl-scroll"><table class="tbl" id="tblFuel"><thead><tr><th>ID</th><th>Data</th><th>Cisterna</th><th>Mezzo</th><th>Trattorista</th><th>Litri</th><th>Lavoro</th></tr></thead><tbody></tbody></table></div>
+    </div>
+
+  </div>
+
+  <!-- ═══ SCADENZE TAB ═══ -->
+  <div class="content" id="p-scadenze">
+
+    <!-- KPI riepilogo -->
+    <div class="kpi-grid" style="margin-bottom:16px">
+      <div class="kpi red"><div class="kpi-icon">🔴</div><div class="kpi-val" id="k-sc-scadute">—</div><div class="kpi-lbl">Scadute</div></div>
+      <div class="kpi red"><div class="kpi-icon">⚡</div><div class="kpi-val" id="k-sc-urgenti">—</div><div class="kpi-lbl">Urgenti (&lt;30gg)</div></div>
+      <div class="kpi amber"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="k-sc-prox">—</div><div class="kpi-lbl">In arrivo (30-90gg)</div></div>
+      <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val" id="k-sc-ok">—</div><div class="kpi-lbl">Tutto in regola</div></div>
+    </div>
+
+    <!-- Filtri rapidi per categoria -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap" id="scadCatChips"></div>
+
+    <!-- Vista raggruppata per urgenza -->
+    <div id="scadGrouped"></div>
+
+  </div>
+
+  <!-- ═══ UPLOAD/INSERT TAB ═══ -->
+  <div class="content" id="p-upload">
+    <div class="upload-section" style="max-width:720px;padding:0">
+
+      <!-- BARRA SESSIONE -->
+      <div id="sessionBar" style="display:none;background:rgba(110,231,135,.08);border:1px solid var(--green);border-radius:var(--r);padding:12px 16px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--green2)">📋 In coda:</span>
+          <span id="sessionCount" style="font-family:var(--sans);font-weight:800;font-size:18px;color:var(--text)">0</span>
+          <span style="font-size:11px;color:var(--text3)">fatture</span>
+          <span id="sessionTotal" style="font-size:13px;color:var(--green2);font-weight:600">€ 0,00</span>
+          <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="toggleSessionDetail()" style="background:none;border:1px solid var(--border2);border-radius:6px;padding:5px 10px;color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer" id="btnVediCoda">👁 Vedi coda</button>
+            <button onclick="cpSession()" style="background:rgba(75,174,232,.15);border:1px solid rgba(75,174,232,.3);border-radius:6px;padding:5px 10px;color:var(--blue);font-family:var(--mono);font-size:11px;cursor:pointer;font-weight:600">⎘ Copia per Sheets</button>
+            <button onclick="commitSession()" style="background:var(--green);color:#06120a;border:none;border-radius:6px;padding:5px 14px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer">⬇ Salva in Excel</button>
+            <button onclick="downloadExcel()" style="background:rgba(75,174,232,.15);border:1px solid rgba(75,174,232,.3);border-radius:6px;padding:5px 10px;color:var(--blue);font-family:var(--mono);font-size:11px;cursor:pointer">⬇ Scarica Excel</button>
+            <button onclick="clearSession()" style="background:none;border:1px solid rgba(232,80,80,.3);border-radius:6px;padding:5px 10px;color:var(--red);font-family:var(--mono);font-size:11px;cursor:pointer">✕ Svuota</button>
+          </div>
+        </div>
+        <!-- Dettaglio coda -->
+        <div id="sessionDetail" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+          <table class="tbl" id="tblSession">
+            <thead><tr><th>#</th><th>N° Doc</th><th>Data</th><th>Mezzo</th><th>Fornitore</th><th>Righe</th><th>Totale €</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mode-sw">
+        <button class="mode-btn active" id="btnPdf" onclick="setMode('pdf')">📄 Da PDF / Foto</button>
+        <button class="mode-btn" id="btnMan" onclick="setMode('manual')">✏️ Inserimento manuale</button>
+      </div>
+
+      <!-- PDF MODE -->
+      <div id="modePdf">
+        <div class="drop-zone" id="dz" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="doDrop(event)">
+          <input type="file" accept=".pdf,image/*" onchange="handleFile(this.files[0])">
+          <div style="font-size:28px;margin-bottom:8px">📄</div>
+          <div style="font-family:var(--sans);font-weight:600;font-size:14px">Trascina DDT o <span style="color:var(--green2);text-decoration:underline">sfoglia</span></div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">PDF · JPG · PNG</div>
+        </div>
+        <div id="fpInfo" style="display:none;text-align:center;margin-bottom:10px"></div>
+        <button class="btn-main" id="btnEx" disabled onclick="doExtract()">✦ Estrai dati con AI</button>
+        <div id="ldg" style="display:none;margin-top:12px;font-size:12px;color:var(--text2);align-items:center;gap:10px"><div class="spin"></div><span id="ldgMsg">Analisi...</span></div>
+        <div id="pdfRes" style="margin-top:14px"></div>
+      </div>
+
+      <!-- MANUAL MODE -->
+      <div id="modeMan" style="display:none">
+        <div class="fgrid">
+          <div class="fg2"><label>Data *</label><input type="date" id="m_data"></div>
+          <div class="fg2"><label>N° documento</label><input type="text" id="m_doc" placeholder="es. 0000045-PR"></div>
+          <div class="fg2"><label>Mezzo *</label><select id="m_mezzo"><option value="">— seleziona —</option></select></div>
+          <div class="fg2"><label>Ore motore</label><input type="number" id="m_ore" placeholder="es. 7710"></div>
+          <div class="fg2"><label>Tipo intervento *</label>
+            <select id="m_tipo"><option value="">—</option><option>Tagliando</option><option>Riparazione guasto</option><option>Revisione periodica</option><option>Sostituzione programmata</option><option>Acquisto ricambio</option><option>Pratiche amministrative</option><option>Altro</option></select>
+          </div>
+          <div class="fg2"><label>Eseguito da</label><input type="text" id="m_eseg" placeholder="es. Az Agricoltura"></div>
+          <div class="fg2"><label>Fornitore *</label><input type="text" id="m_forn" list="dlForn" placeholder="Az Agricoltura S.r.l."><datalist id="dlForn"></datalist></div>
+          <div class="fg2"><label>ID Fornitore</label><input type="text" id="m_fornid" list="dlFornId" placeholder="F002"><datalist id="dlFornId"></datalist></div>
+        </div>
+        <div style="height:1px;background:var(--border);margin:14px 0"></div>
+        <p style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Pezzi / componenti</p>
+        <div id="pezziList"></div>
+        <button class="btn-add" onclick="addPezzo()">+ Aggiungi pezzo</button>
+        <div style="height:1px;background:var(--border);margin:14px 0"></div>
+        <div class="fg2 full"><label>Note</label><textarea id="m_note" rows="2" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px;width:100%;resize:vertical"></textarea></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn-main" onclick="doManual('queue')" style="flex:1;background:var(--bg3);color:var(--green2);border:1px solid var(--green);min-width:160px">+ Aggiungi alla coda</button>
+          <button class="btn-main" onclick="doManual('sheets')" style="flex:1;background:rgba(75,174,232,.15);color:var(--blue);border:1px solid rgba(75,174,232,.3);min-width:160px">⎘ Copia per Sheets</button>
+          <button class="btn-main" onclick="doManual('excel')" style="flex:1;min-width:160px">⬇ Salva in Excel</button>
+        </div>
+        <div id="manRes" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+
+<!-- MOBILE BOTTOM NAV -->
+<div id="mobileNav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:190;padding:6px 0 env(safe-area-inset-bottom)">
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0">
+    <button onclick="showTab('dash');setMobileNav(this)" class="mob-nav-btn active" style="background:none;border:none;color:var(--text2);padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;font-family:var(--mono)"><span style="font-size:18px">📊</span>Dashboard</button>
+    <button onclick="showTab('alerts');setMobileNav(this)" class="mob-nav-btn" style="background:none;border:none;color:var(--text2);padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;font-family:var(--mono)"><span style="font-size:18px">🔴</span>Alert</button>
+    <button onclick="showTab('mezzi');setMobileNav(this)" class="mob-nav-btn" style="background:none;border:none;color:var(--text2);padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;font-family:var(--mono)"><span style="font-size:18px">🚜</span>Mezzi</button>
+    <button onclick="showTab('storico');setMobileNav(this)" class="mob-nav-btn" style="background:none;border:none;color:var(--text2);padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;font-family:var(--mono)"><span style="font-size:18px">🔧</span>Storico</button>
+    <button onclick="showTab('upload');setMobileNav(this)" class="mob-nav-btn" style="background:none;border:none;color:var(--text2);padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;font-family:var(--mono)"><span style="font-size:18px">📄</span>Inserimento</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════
+// STATE
+// ══════════════════════════
+let wb = null, excelFileName = null;
+let allMezzi = [], allStorico = [], allFornitori = [];
+let filteredStorico = [];
+let pCnt = 0, nextIntId = 51;
+let fileB64 = null, fileType = null, extData = null, selMezzo = null;
+const MACROAREE = ['Motore e alimentazione','Trasmissione e frizione','Impianto idraulico','Impianto elettrico','Carrozzeria e telaio','Ruote e assali','Organi lavoranti','Impianto frenante','Filtri e fluidi','Impianto di scarico','Altro'];
+const DONUT_COLORS = ['#6ee787','#ffb938','#5cc8ff','#ff6b6b','#c4a2ff','#4be8c8','#e8784b','#84b0e8','#c8e878','#e878b0'];
+
+// ── SESSIONE: accumulo fatture prima di scrivere Excel ──
+// Ogni elemento = { label, doc, data, mNome, forn, rows[] }
+// ══════════════════════════
+// EXCEL LOAD
+// ══════════════════════════
+function loadExcel(file) {
+  if (!file) return;
+  excelFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      wb = XLSX.read(data, { type:'array', cellDates: true });
+      parseMezzi(); parseStorico(); parseFornitori();
+      computeNextIntId();
+      document.getElementById('loadZone').style.display = 'none';
+      document.getElementById('mainArea').classList.add('on');
+      document.getElementById('xlStatus').innerHTML = `<span style="color:var(--green2)">✓ ${excelFileName}</span>`;
+      document.getElementById('dlBtn').style.display = '';
+      populateSelects();
+      setPeriod(12,'M'); // default 1 year
+      refreshAll();
+      toast('✓ Excel caricato — ' + allMezzi.length + ' mezzi, ' + allStorico.length + ' interventi');
+    } catch(err) {
+      alert('Errore lettura file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseMezzi() {
+  const ws = wb.Sheets['Mezzi'];
+  if (!ws) return;
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+  let hdr = rows.findIndex(r => r.some(v => /ID.{0,3}Mezzo/i.test(String(v))));
+  if (hdr < 0) hdr = 1;
+  allMezzi = [];
+  for (let i = hdr+1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0] || !String(r[0]).match(/^M\d/)) continue;
+    if (!r[1]) continue; // skip rows without name
+    allMezzi.push({
+      id:     String(r[0]).trim(),
+      nome:   String(r[1]).trim(),
+      tipo:   String(r[2]||''),
+      marca:  String(r[3]||''),
+      modello:String(r[4]||''),
+      anno:   r[5]||'',
+      ore:    r[6]||'',
+      stato:  String(r[7]||''),
+      cat:    String(r[2]||'')
+    });
+  }
+}
+
+function parseStorico() {
+  const ws = wb.Sheets['Storico_Sostituzioni'];
+  if (!ws) return;
+  // Usa raw:true per avere i valori numerici puri senza conversioni
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval: null, raw: true });
+  let hdr = rows.findIndex(r => r && r.some(v => v && /ID.{0,3}Intervento|Quantit/i.test(String(v))));
+  if (hdr < 0) hdr = 1;
+  allStorico = [];
+  for (let i = hdr+1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || (!r[0] && !r[1] && !r[2])) continue;
+    // Leggi celle direttamente dal foglio per ottenere il valore calcolato della formula
+    const cellAddr = (col, row) => {
+      const addr = XLSX.utils.encode_cell({r: i, c: col});
+      const cell = ws[addr];
+      if (!cell) return null;
+      // Se è formula, usa il valore cached (v) se disponibile
+      if (cell.t === 'f' || cell.f) return cell.v != null ? cell.v : null;
+      return cell.v != null ? cell.v : null;
+    };
+    // Struttura reale: A=ID,B=Data,C=IDMezzo,D=NomeMezzo,E=Macroarea,F=Componente
+    // G=Tipo,H=Fornitore,I=IDFornitore,J=nFattura,K=Qty,L=PU,M=Sconto,N=Totale,O=Ore,P=Note
+    const qty  = parseFloat(cellAddr(10, i)) || 0;  // K col 11
+    const pu   = parseFloat(cellAddr(11, i)) || 0;  // L col 12
+    const sc   = parseFloat(cellAddr(12, i)) || 0;  // M col 13
+    const nVal = cellAddr(13, i);                   // N col 14 = Totale
+    const tot  = (nVal != null && !isNaN(parseFloat(nVal)) && parseFloat(nVal) > 0)
+      ? Math.round(parseFloat(nVal)*100)/100
+      : Math.round(qty * pu * (1 + sc/100) * 100)/100;
+    if (!r[0] && qty === 0 && pu === 0) continue;
+    allStorico.push({
+      id:    String(r[0]||''),
+      data:  fmtDataFromExcel(r[1]),
+      mId:   String(r[2]||''),
+      mNome: String(r[3]||''),
+      macro: String(r[4]||''),
+      comp:  String(r[5]||''),
+      tipo:  String(r[6]||''),
+      forn:  String(r[7]||''),
+      fornId:String(r[8]||''),
+      doc:   String(r[9]||''),   // J = n. fattura
+      qty, pu, sc, tot,
+      ore:   String(r[14]||''),  // O = Ore
+      note:  String(r[15]||'')   // P = Note
+    });
+  }
+  // Filtra righe senza dati significativi
+  allStorico = allStorico.filter(s => s.comp || s.mId || s.tot > 0);
+  window._lastExcelRow = null; // reset per il prossimo inserimento
+}
+
+function fmtDataFromExcel(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().slice(0,10);
+  const s = String(val);
+  // già YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  return s;
+}
+
+function parseFornitori() {
+  const ws = wb.Sheets['Fornitori'];
+  if (!ws) return;
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:false });
+  let hdr = rows.findIndex(r => r.some(v => /ID.{0,3}Fornitore|Ragione/i.test(String(v))));
+  if (hdr < 0) hdr = 1;
+  allFornitori = [];
+  for (let i = hdr+1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0] || !String(r[0]).match(/^F\d/)) continue;
+    if (!r[1]) continue; // skip empty
+    allFornitori.push({
+      id:   String(r[0]).trim(),
+      nome: String(r[1]).trim(),
+      tipo: String(r[2]||''),
+      tel:  String(r[3]||'')
+    });
+  }
+}
+
+function computeNextIntId() {
+  let max = 0;
+  allStorico.forEach(s => {
+    const m = String(s.id).match(/INT0*(\d+)/i);
+    if(m) max = Math.max(max, parseInt(m[1]));
+  });
+  nextIntId = max + 1;
+  // Determina quante cifre usa il file (es. INT0001 = 4 cifre)
+  const sample = allStorico.find(s => /INT\d+/i.test(String(s.id)));
+  if (sample) {
+    const digits = String(sample.id).replace(/[^0-9]/g,'').length;
+    window._intDigits = digits || 3;
+  } else {
+    window._intDigits = 4;
+  }
+}
+
+// ══════════════════════════
+// FILTERS
+// ══════════════════════════
+function populateSelects() {
+  const sel = document.getElementById('f-mezzo');
+  sel.innerHTML = '<option value="">Tutti i mezzi</option>';
+  allMezzi.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = `${m.id} — ${m.nome}`; sel.appendChild(o); });
+  const m = document.getElementById('m_mezzo');
+  m.innerHTML = '<option value="">— seleziona —</option>';
+  allMezzi.forEach(mz => { const o = document.createElement('option'); o.value = mz.id; o.textContent = `${mz.id} — ${mz.nome}`; m.appendChild(o); });
+  const dlf = document.getElementById('dlForn');
+  const dlfi = document.getElementById('dlFornId');
+  if(dlf) dlf.innerHTML = allFornitori.map(f=>`<option value="${f.nome}" label="${f.id}">`).join('');
+  if(dlfi) dlfi.innerHTML = allFornitori.map(f=>`<option value="${f.id}" label="${f.nome}">`).join('');
+}
+
+function filterCat() {
+  const cat = document.getElementById('f-cat').value;
+  const mzSel = document.getElementById('f-mezzo');
+  mzSel.innerHTML = '<option value="">Tutti i mezzi</option>';
+  const filtered = cat ? allMezzi.filter(m => m.cat === cat) : allMezzi;
+  filtered.forEach(m => { const o = document.createElement('option'); o.value = m.id; o.textContent = `${m.id} — ${m.nome}`; mzSel.appendChild(o); });
+  applyFilters();
+}
+
+function getCatOfMezzo(mId) {
+  const mz = allMezzi.find(m => m.id === mId);
+  return mz ? mz.cat : '';
+}
+
+function setPeriod(n, unit) {
+  document.querySelectorAll('.pbt').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const now = new Date();
+  let da;
+  if (unit === 'ALL') { da = new Date('2020-01-01'); }
+  else if (unit === 'Y') { da = new Date(now.getFullYear(), 0, 1); }
+  else { da = new Date(now); da.setMonth(da.getMonth() - n); }
+  const toDate = s => s.toISOString().slice(0,10);
+  document.getElementById('f-da').value = toDate(da);
+  document.getElementById('f-a').value = toDate(now);
+  applyFilters();
+}
+
+function applyFilters() {
+  const cat = document.getElementById('f-cat').value;
+  const mzId = document.getElementById('f-mezzo').value;
+  const da = document.getElementById('f-da').value;
+  const a = document.getElementById('f-a').value;
+  filteredStorico = allStorico.filter(s => {
+    if (mzId && s.mId !== mzId) return false;
+    if (cat) {
+      const mz = allMezzi.find(m => m.id === s.mId);
+      // Confronto esatto con tipologia Excel
+      if (!mz || mz.cat !== cat) return false;
+    }
+    if (da && s.data < da) return false;
+    if (a && s.data > a) return false;
+    return true;
+  });
+  refreshAll();
+}
+
+function resetFilters() {
+  document.getElementById('f-cat').value = '';
+  document.getElementById('f-mezzo').value = '';
+  populateSelects();
+  setPeriod(12,'M');
+}
+
+// ══════════════════════════
+// REFRESH ALL
+// ══════════════════════════
+function refreshAll() {
+  renderKPI();
+  renderChartMezzo();
+  renderChartMacro();
+  renderTopComp();
+  renderTopForn();
+  renderTrend();
+  renderAlerts();
+  renderMezziTab();
+  renderStorico();
+}
+
+// ══════════════════════════
+// KPI
+// ══════════════════════════
+function renderKPI() {
+  const tot = filteredStorico.reduce((s,r)=>s+(r.tot||0),0);
+  const nInt = filteredStorico.length;
+  const mzIds = [...new Set(filteredStorico.map(r=>r.mId))];
+  const media = mzIds.length ? (tot/mzIds.length) : 0;
+  const alerts = computeAlerts();
+  const critici = alerts.filter(a=>a.level==='CRITICO').length;
+  const ricorr = alerts.length;
+
+  document.getElementById('k-tot').textContent = '€ ' + fmt(tot);
+  document.getElementById('k-int').textContent = nInt;
+  document.getElementById('k-int-sub').textContent = 'nel periodo selezionato';
+  document.getElementById('k-mezzi').textContent = mzIds.length;
+  document.getElementById('k-ricorr').textContent = ricorr;
+  document.getElementById('k-alerts').textContent = critici;
+  document.getElementById('k-media').textContent = '€ ' + fmt(media);
+  document.getElementById('alertBadge').textContent = critici;
+}
+
+// ══════════════════════════
+// CHART: MEZZO BAR
+// ══════════════════════════
+function renderChartMezzo() {
+  const agg = {};
+  filteredStorico.forEach(s => { agg[s.mId] = (agg[s.mId]||0) + (s.tot||0); });
+  const sorted = Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if (!sorted.length) { document.getElementById('chartMezzo').innerHTML='<div class="empty">Nessun dato nel periodo</div>'; return; }
+  const max = sorted[0][1];
+  const colors = ['#6ee787','#9df5ac','#ffb938','#5cc8ff','#ff6b6b','#c4a2ff','#4be8c8','#e8784b','#84b0e8','#c8e878'];
+  document.getElementById('chartMezzo').innerHTML = sorted.map(([id,val],i) => {
+    const mz = allMezzi.find(m=>m.id===id);
+    const nome = mz ? mz.nome : id;
+    const pct = max > 0 ? (val/max*100) : 0;
+    const anomalie = isAnomaly(id) ? '<span class="anomaly-tag">⚠ anomalia</span>' : '';
+    return `<div class="bar-row">
+      <div class="bar-lbl" title="${nome}">${nome} ${anomalie}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${colors[i%colors.length]}"></div></div>
+      <div class="bar-val">€ ${fmtK(val)}</div>
+    </div>`;
+  }).join('');
+}
+
+function isAnomaly(mId) {
+  const alerts = computeAlerts();
+  return alerts.some(a => a.mId === mId && a.level === 'CRITICO');
+}
+
+// ══════════════════════════
+// CHART: MACRO DONUT
+// ══════════════════════════
+function renderChartMacro() {
+  const agg = {};
+  filteredStorico.forEach(s => { agg[s.macro||'Altro'] = (agg[s.macro||'Altro']||0) + (s.tot||0); });
+  const entries = Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const total = entries.reduce((s,[,v])=>s+v,0);
+  if (!total) { document.getElementById('chartMacro').innerHTML='<div class="empty">—</div>'; return; }
+
+  // SVG donut
+  const cx=60, cy=60, R=55, r=30;
+  let angle = -Math.PI/2;
+  let paths = '';
+  entries.forEach(([key,val],i) => {
+    const frac = val/total;
+    const a0 = angle, a1 = angle + frac * 2 * Math.PI;
+    const x0=cx+R*Math.cos(a0), y0=cy+R*Math.sin(a0);
+    const x1=cx+R*Math.cos(a1), y1=cy+R*Math.sin(a1);
+    const xi0=cx+r*Math.cos(a0), yi0=cy+r*Math.sin(a0);
+    const xi1=cx+r*Math.cos(a1), yi1=cy+r*Math.sin(a1);
+    const lg = frac > .5 ? 1 : 0;
+    paths += `<path d="M${xi0},${yi0} L${x0},${y0} A${R},${R} 0 ${lg},1 ${x1},${y1} L${xi1},${yi1} A${r},${r} 0 ${lg},0 ${xi0},${yi0}" fill="${DONUT_COLORS[i]}" opacity=".9"/>`;
+    angle = a1;
+  });
+
+  const legend = entries.map(([key,val],i) =>
+    `<div class="dl-row"><div class="dl-dot" style="background:${DONUT_COLORS[i]}"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px">${key.split(' e ')[0]}</span><span class="dl-pct">${(val/total*100).toFixed(0)}%</span></div>`
+  ).join('');
+
+  document.getElementById('chartMacro').innerHTML = `
+    <svg class="donut-svg" viewBox="0 0 120 120" width="110" height="110">${paths}<text x="60" y="65" text-anchor="middle" fill="#e8f0e0" font-size="10" font-family="DM Mono">€${fmtK(total)}</text></svg>
+    <div class="donut-legend">${legend}</div>`;
+}
+
+// ══════════════════════════
+// TOP COMPONENTI TABLE
+// ══════════════════════════
+function renderTopComp() {
+  const agg = {};
+  filteredStorico.forEach(s => {
+    const k = s.comp.toLowerCase().trim() || 'n/d';
+    if (!agg[k]) agg[k] = { nome:s.comp, n:0, tot:0 };
+    agg[k].n++; agg[k].tot += s.tot||0;
+  });
+  const sorted = Object.values(agg).sort((a,b)=>b.tot-a.tot).slice(0,12);
+  const tbody = document.querySelector('#tblComp tbody');
+  tbody.innerHTML = sorted.map((c,i)=>
+    `<tr><td style="color:var(--text3)">${i+1}</td><td>${c.nome}</td><td><span class="badge ${c.n>=3?'red':c.n>=2?'amber':'gray'}">${c.n}</span></td><td style="color:var(--green2);font-weight:600">€ ${fmt(c.tot)}</td></tr>`
+  ).join('') || '<tr><td colspan="4" class="empty">Nessun dato</td></tr>';
+}
+
+// ══════════════════════════
+// TOP FORNITORI TABLE
+// ══════════════════════════
+function renderTopForn() {
+  const agg = {};
+  filteredStorico.forEach(s => {
+    const k = s.forn || s.fornId || 'n/d';
+    if (!agg[k]) agg[k] = { nome:s.forn||s.fornId, n:0, tot:0 };
+    agg[k].n++; agg[k].tot += s.tot||0;
+  });
+  const total = filteredStorico.reduce((s,r)=>s+(r.tot||0),0);
+  const sorted = Object.values(agg).sort((a,b)=>b.tot-a.tot);
+  const tbody = document.querySelector('#tblForn tbody');
+  tbody.innerHTML = sorted.map(f => {
+    const pct = total > 0 ? (f.tot/total*100).toFixed(1) : 0;
+    return `<tr><td>${f.nome}</td><td>${f.n}</td><td style="color:var(--green2)">€ ${fmt(f.tot)}</td><td><span class="badge gray">${pct}%</span></td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="empty">Nessun dato</td></tr>';
+}
+
+// ══════════════════════════
+// TREND MENSILE SVG
+// ══════════════════════════
+function renderTrend() {
+  const da = document.getElementById('f-da').value;
+  const a = document.getElementById('f-a').value;
+  if (!da || !a) return;
+  // Build months array
+  const start = new Date(da), end = new Date(a);
+  const months = [];
+  let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cur <= end) {
+    months.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
+    cur.setMonth(cur.getMonth()+1);
+    if (months.length > 24) break;
+  }
+  const byMonth = {};
+  months.forEach(m => byMonth[m] = 0);
+  filteredStorico.forEach(s => {
+    const m = s.data.slice(0,7);
+    if (byMonth[m] !== undefined) byMonth[m] += s.tot||0;
+  });
+  const vals = months.map(m => byMonth[m]);
+  const maxV = Math.max(...vals, 1);
+  const W = 700, H = 110, PAD = 10, lPad = 55;
+  const n = months.length;
+  if (n < 2) { document.getElementById('trendChart').innerHTML='<div class="empty">Seleziona un periodo più ampio</div>'; return; }
+  const xStep = (W - lPad - PAD) / (n-1);
+  const yScale = v => H - PAD - (v/maxV)*(H - 2*PAD - 14);
+  const pts = vals.map((v,i) => `${lPad + i*xStep},${yScale(v)}`).join(' ');
+  const area = `${lPad},${H-PAD} ` + pts + ` ${lPad+(n-1)*xStep},${H-PAD}`;
+  const xLabels = months.map((m,i) => {
+    if (n > 12 && i % 2 !== 0 && i !== n-1) return '';
+    const x = lPad + i*xStep;
+    return `<text x="${x}" y="${H+4}" text-anchor="middle" fill="rgba(232,240,224,.35)" font-size="8">${m.slice(5)}</text>`;
+  }).join('');
+  const yTicks = [0, .5, 1].map(f => {
+    const y = yScale(maxV*f);
+    const v = Math.round(maxV*f);
+    return `<text x="${lPad-4}" y="${y+3}" text-anchor="end" fill="rgba(232,240,224,.3)" font-size="8">€${fmtK(v)}</text><line x1="${lPad}" y1="${y}" x2="${W-PAD}" y2="${y}" stroke="rgba(255,255,255,.05)"/>`;
+  }).join('');
+  document.getElementById('trendChart').innerHTML = `<svg viewBox="0 0 ${W} ${H+12}" style="width:100%;height:${H+16}px">
+    ${yTicks}
+    <polygon points="${area}" fill="rgba(110,231,135,.12)"/>
+    <polyline points="${pts}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round"/>
+    ${vals.map((v,i) => `<circle cx="${lPad+i*xStep}" cy="${yScale(v)}" r="3" fill="${v===maxV?'var(--amber)':'var(--green)'}" title="€${fmt(v)}"/>`).join('')}
+    ${xLabels}
+  </svg>`;
+  document.getElementById('trendSub').textContent = months.length + ' mesi · max € ' + fmt(maxV);
+}
+
+// ══════════════════════════
+// ALERTS COMPUTATION
+// ══════════════════════════
+function computeAlerts() {
+  // Group by mId + comp (normalized)
+  const groups = {};
+  allStorico.forEach(s => {
+    const compN = s.comp.toLowerCase().trim();
+    const key = `${s.mId}__${compN}`;
+    if (!groups[key]) groups[key] = { mId:s.mId, mNome:s.mNome, comp:s.comp, macro:s.macro, entries:[] };
+    groups[key].entries.push(s);
+  });
+  const alerts = [];
+  Object.values(groups).forEach(g => {
+    if (g.entries.length < 2) return;
+    const sorted = g.entries.slice().sort((a,b) => a.data.localeCompare(b.data));
+    const prima = sorted[0].data;
+    const ultima = sorted[sorted.length-1].data;
+    const gg = daysDiff(prima, ultima);
+    const tot = g.entries.reduce((s,e)=>s+(e.tot||0),0);
+    const n = g.entries.length;
+    let level;
+    if (n >= 3 || (n >= 2 && gg < 180)) level = 'CRITICO';
+    else if (n >= 2 && gg < 365) level = 'ATTENZIONE';
+    else level = 'MONITORARE';
+    alerts.push({ mId:g.mId, mNome:g.mNome, comp:g.comp, macro:g.macro, n, prima, ultima, gg, tot, level, entries:sorted });
+  });
+  return alerts.sort((a,b) => { const ord={CRITICO:0,ATTENZIONE:1,MONITORARE:2}; return ord[a.level]-ord[b.level] || b.n-a.n; });
+}
+
+function daysDiff(d1, d2) {
+  return Math.round((new Date(d2) - new Date(d1)) / 86400000);
+}
+
+function renderAlerts() {
+  const alerts = computeAlerts();
+  const critici = alerts.filter(a=>a.level==='CRITICO');
+  const attenzione = alerts.filter(a=>a.level==='ATTENZIONE');
+
+  // Alert cards
+  let html = '';
+  if (critici.length) {
+    html += `<h3 style="font-family:var(--sans);font-size:13px;color:var(--red);margin-bottom:10px">🔴 Critici (${critici.length})</h3>`;
+    critici.forEach(a => {
+      html += `<div class="alert-card">
+        <h4>⚠ ${a.comp} — ${a.mNome} <span style="color:var(--red);font-size:10px">${a.n}x riparazioni</span></h4>
+        <p>ATTENZIONE: <strong>${a.comp}</strong> su <strong>${a.mNome}</strong> è già stato riparato <strong>${a.n} volte</strong>. Prima riparazione: ${a.prima} — Ultima: ${a.ultima}</p>
+        <div class="meta"><span>📅 ${a.gg} giorni tra 1ª e ultima</span><span>💰 Totale € ${fmt(a.tot)}</span><span>📁 ${a.macro}</span></div>
+      </div>`;
+    });
+  }
+  if (attenzione.length) {
+    html += `<h3 style="font-family:var(--sans);font-size:13px;color:var(--amber);margin:16px 0 10px">🟡 Attenzione (${attenzione.length})</h3>`;
+    attenzione.forEach(a => {
+      html += `<div class="alert-card amber">
+        <h4>⚠ ${a.comp} — ${a.mNome}</h4>
+        <p>Componente riparato ${a.n} volte in ${a.gg} giorni. Verificare causa ricorrente.</p>
+        <div class="meta"><span>📅 ${a.prima} → ${a.ultima}</span><span>💰 € ${fmt(a.tot)}</span></div>
+      </div>`;
+    });
+  }
+  if (!alerts.length) html = '<div class="empty">✅ Nessuna anomalia rilevata nel database</div>';
+  document.getElementById('alertList').innerHTML = html;
+
+  // Table
+  const tbody = document.querySelector('#tblAlert tbody');
+  tbody.innerHTML = alerts.map(a => {
+    const lvlClass = a.level==='CRITICO'?'red':a.level==='ATTENZIONE'?'amber':'green';
+    return `<tr>
+      <td>${a.mNome}</td><td><strong>${a.comp}</strong></td><td style="color:var(--text3)">${a.macro}</td>
+      <td><span class="badge ${lvlClass}">${a.n}</span></td>
+      <td>${a.prima}</td><td>${a.ultima}</td>
+      <td>${a.gg} gg</td>
+      <td style="color:var(--green2)">€ ${fmt(a.tot)}</td>
+      <td><span class="badge ${lvlClass}">${a.level}</span></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" class="empty">Nessuna anomalia</td></tr>';
+}
+
+// ══════════════════════════
+// MEZZI TAB
+// ══════════════════════════
+function renderMezziTab() {
+  // Grid cards by category
+  const cats = [...new Set(allMezzi.map(m=>m.cat||m.tipo).filter(Boolean))].sort();
+  const catAgg = {};
+  cats.forEach(ct => { catAgg[ct] = { n:0, tot:0 }; });
+  allMezzi.forEach(m => { const ct=m.cat||m.tipo; if(ct&&catAgg[ct]) catAgg[ct].n++; });
+  filteredStorico.forEach(s => {
+    const mz = allMezzi.find(m=>m.id===s.mId);
+    if (mz) { const ct=mz.cat||mz.tipo; if(ct&&catAgg[ct]) catAgg[ct].tot += s.tot||0; }
+  });
+  const catColors = {
+    'Trattore':'#6ee787','Telescopico':'#5cc8ff','Carro Miscelatore':'#ffb938',
+    'Rimorchi':'#c4a2ff','Escavatore':'#ff6b6b','Camion':'#4be8c8',
+    'Attrezzi trattore':'#84b0e8','Attrezzi merlo':'#e8784b',
+    'Attrezzi escavatore':'#c8e878','Attrezzi Zootecnici':'#e878b0',
+    'Imballatrice':'#78b0e8','Gruppo Elettrogeno':'#c8a878',
+    'Furgone':'#a878e8','Pala cigolata':'#78e8a8','Pulizia':'#e8c878'
+  };
+  document.getElementById('mezziGrid').innerHTML = Object.entries(catAgg).map(([cat,v]) =>
+    `<div class="kpi" style="--kpi-color:${catColors[cat]||'var(--green)'}">
+      <div class="kpi-val">${v.n}</div><div class="kpi-lbl">${cat}</div>
+      <div class="kpi-sub">€ ${fmtK(v.tot)} spesa</div>
+    </div>`
+  ).join('');
+
+  // Table
+  const mzAgg = {};
+  filteredStorico.forEach(s => {
+    if(!mzAgg[s.mId]) mzAgg[s.mId] = { n:0, tot:0, last:'' };
+    mzAgg[s.mId].n++;
+    mzAgg[s.mId].tot += s.tot||0;
+    if (!mzAgg[s.mId].last || s.data > mzAgg[s.mId].last) mzAgg[s.mId].last = s.data;
+  });
+  const alerts = computeAlerts();
+  const tbody = document.querySelector('#tblMezzi tbody');
+  const fcat = document.getElementById('f-cat').value;
+  const fmz = document.getElementById('f-mezzo').value;
+  let mzList = allMezzi;
+  if (fcat) mzList = mzList.filter(m => m.cat === fcat);
+  if (fmz) mzList = mzList.filter(m => m.id === fmz);
+  tbody.innerHTML = mzList.map(m => {
+    const ag = mzAgg[m.id] || { n:0, tot:0, last:'-' };
+    const hasAlert = alerts.some(a=>a.mId===m.id&&a.level==='CRITICO');
+    const stato = m.stato||''; const statoClass = stato==='Operativo'?'green':stato.toLowerCase().includes('manutenzione')?'amber':'gray';
+    return `<tr>
+      <td style="font-family:var(--mono);color:var(--text3)">${m.id}</td>
+      <td><strong>${m.nome}</strong>${hasAlert?'<span class="anomaly-tag" style="margin-left:6px">⚠ alert</span>':''}</td>
+      <td><span class="badge gray">${m.cat||m.tipo}</span></td>
+      <td style="color:var(--text2)">${m.marca} ${m.modello}</td>
+      <td>${m.anno||'-'}</td>
+      <td style="color:var(--text2)">${m.ore?m.ore+' h':'-'}</td>
+      <td><span class="badge ${statoClass}">${m.stato||'—'}</span></td>
+      <td>${ag.n}</td>
+      <td style="color:var(--green2)">€ ${fmt(ag.tot)}</td>
+      <td style="color:var(--text3)">${ag.last||'-'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" class="empty">Nessun mezzo</td></tr>';
+}
+
+// ══════════════════════════
+// STORICO TAB
+// ══════════════════════════
+function renderStorico() {
+  const q = (document.getElementById('srchStor')?.value||'').toLowerCase();
+  let data = filteredStorico;
+  if (q) data = data.filter(s => Object.values(s).join(' ').toLowerCase().includes(q));
+  const sorted = data.slice().sort((a,b)=>b.data.localeCompare(a.data));
+  document.getElementById('storCount').textContent = `${sorted.length} interventi`;
+  const tbody = document.querySelector('#tblStor tbody');
+  tbody.innerHTML = sorted.slice(0,200).map(s =>
+    `<tr>
+      <td style="color:var(--text3);font-size:10px">${s.id}</td>
+      <td>${s.data}</td>
+      <td>${s.mNome||s.mId}</td>
+      <td><span class="badge gray" style="font-size:9px">${(s.macro||'').split(' e ')[0]}</span></td>
+      <td><strong>${s.comp}</strong></td>
+      <td style="color:var(--text3)">${s.tipo}</td>
+      <td>${s.forn}</td>
+      <td style="color:var(--text3)">${s.doc}</td>
+      <td>${s.qty}</td>
+      <td style="color:var(--green2)">€ ${fmt(s.tot)}</td>
+      <td style="color:var(--text3);max-width:120px;overflow:hidden;text-overflow:ellipsis">${s.note}</td>
+    </tr>`
+  ).join('') || '<tr><td colspan="11" class="empty">Nessun intervento</td></tr>';
+}
+
+// ══════════════════════════
+// TABS
+// ══════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.content').forEach(p=>p.classList.remove('on'));
+  document.getElementById('t-'+id).classList.add('active');
+  document.getElementById('p-'+id).classList.add('on');
+  // filters bar: hide on upload tab
+  document.getElementById('filterBar').style.display = id==='upload' ? 'none' : '';
+}
+
+// ══════════════════════════
+// UPLOAD / INSERT
+// ══════════════════════════
+function setMode(m) {
+  document.getElementById('modePdf').style.display = m==='pdf'?'':'none';
+  document.getElementById('modeMan').style.display = m==='manual'?'':'none';
+  document.getElementById('btnPdf').classList.toggle('active', m==='pdf');
+  document.getElementById('btnMan').classList.toggle('active', m==='manual');
+}
+
+function doDrop(e) { e.preventDefault(); document.getElementById('dz').classList.remove('drag'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }
+function handleFile(file) {
+  if(!file) return;
+  fileType = file.type;
+  const r = new FileReader();
+  r.onload = e => {
+    fileB64 = e.target.result.split(',')[1];
+    document.getElementById('fpInfo').style.display='block';
+    document.getElementById('fpInfo').innerHTML = `<span style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;color:var(--green2)">📎 ${file.name}</span>`;
+    document.getElementById('btnEx').disabled = false;
+  };
+  r.readAsDataURL(file);
+}
+
+const ldgMsgs = ['Analisi documento...','Estrazione dati AI...','Identificazione componenti...','Quasi pronto...'];
+let ldgI=0, ldgT=null;
+function setLdg(on) {
+  const el = document.getElementById('ldg');
+  el.style.display = on ? 'flex' : 'none';
+  document.getElementById('btnEx').disabled = on;
+  if(on){ldgI=0;document.getElementById('ldgMsg').textContent=ldgMsgs[0];ldgT=setInterval(()=>{ldgI=(ldgI+1)%ldgMsgs.length;document.getElementById('ldgMsg').textContent=ldgMsgs[ldgI];},1800);}
+  else clearInterval(ldgT);
+}
+
+async function doExtract() {
+  if(!fileB64) return;
+  setLdg(true); selMezzo=null; extData=null;
+  document.getElementById('pdfRes').innerHTML='';
+  const sys=`Sei un assistente esperto in fatture italiane per aziende agricole. Estrai i dati e rispondi SOLO con JSON valido, senza backtick né testo aggiuntivo.
+
+REGOLE CRITICHE PER I CAMPI DI OGNI RIGA/PEZZO:
+- "quantita": il NUMERO DI PEZZI o ORE (colonna Quantità/Q.tà/Qta della fattura). Es: 1, 4, 20, 53. MAI mettere qui il prezzo.
+- "prezzo_unitario": il PREZZO LORDO del singolo pezzo PRIMA dello sconto (colonna Prezzo unitario della fattura). Es. 52,35 — NON applicare lo sconto qui.
+- "sconto_percentuale": lo sconto o maggiorazione % dalla fattura (es. -20 per sconto 20%, +10 per maggiorazione). Metti 0 se assente.
+- "totale_riga": il TOTALE DELLA RIGA = quantita × prezzo_unitario × (1 + sconto/100). Leggilo dalla colonna "Prezzo totale" della fattura.
+- VERIFICA sempre che totale_riga = quantita × prezzo_unitario (con tolleranza 1 cent per arrotondamenti).
+- Per MANODOPERA: quantita = ore lavorate, prezzo_unitario = tariffa oraria, totale_riga = ore × tariffa.
+- Per DIRITTO DI CHIAMATA / RECUPERO COSTI: quantita = 1, prezzo_unitario = importo fisso, totale_riga = stesso importo.
+
+MACROAREE (scegli quella più adatta alla descrizione):
+- "Motore e alimentazione": iniettori, turbina, pompa gasolio, pistoni, radiatore, pompa acqua, sensore temperatura, olio motore, additivi motore, diesel one shot
+- "Trasmissione e frizione": cambio, frizione, riduttore, semiasse, idrostato, calibrazione cambio
+- "Impianto idraulico": pompa idraulica, distributore, cilindro, tubi, raccordi, o-ring, accumulatore, valvole, sollevatore, olio idraulico, LHM
+- "Impianto elettrico": batteria, alternatore, centralina, sensore sterzo, avvisatore, cablaggio, impianto elettrico
+- "Carrozzeria e telaio": fascette, carter, montante, perno, guarnizioni, struttura
+- "Ruote e assali": pneumatici, cingoli, cerchi
+- "Organi lavoranti": organi specifici attrezzi agricoli
+- "Impianto frenante": freni, pastiglie, olio freni, brake
+- "Filtri e fluidi": filtro olio, filtro aria, filtro combustibile/gasolio, olio cambio, refrigerante, actifull
+- "Impianto di scarico": marmitta, DPF, catalizzatore
+- "Altro": manodopera, diritto di chiamata, recupero costi, prestazioni
+
+FORMATO RISPOSTA:
+{"numero_documento":"","data":"DD/MM/YYYY","fornitore":"","piva_fornitore":"","indizi_mezzo":"modello e telaio del mezzo","ore_motore":null,"tipo_intervento":"Tagliando|Riparazione guasto|Revisione periodica|Sostituzione programmata|Acquisto ricambio|Pratiche amministrative|Altro","totale_documento":0,"pezzi":[{"descrizione":"nome ricambio o voce","macroarea":"una delle macroaree sopra","quantita":1,"prezzo_unitario":0.00,"sconto_percentuale":0,"totale_riga":0.00}],"note":null,"campi_mancanti":[]}`;
+  const uc = fileType==='application/pdf'
+    ? [{type:"document",source:{type:"base64",media_type:"application/pdf",data:fileB64}},{type:"text",text:"Estrai tutti i dati della fattura seguendo le regole del sistema prompt. Controlla che per ogni riga: totale_riga = quantita × prezzo_unitario."}]
+    : [{type:"image",source:{type:"base64",media_type:fileType,data:fileB64}},{type:"text",text:"Estrai tutti i dati della fattura seguendo le regole del sistema prompt. Controlla che per ogni riga: totale_riga = quantita × prezzo_unitario."}];
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4096,
+        system:sys,
+        messages:[{role:'user',content:uc}]
+      })
+    });
+    const d = await res.json();
+    setLdg(false);
+
+    // Controlla errori API
+    if (d.error) {
+      document.getElementById('pdfRes').innerHTML=`<div style="background:rgba(232,80,80,.1);border:1px solid var(--red);border-radius:var(--r);padding:12px;font-size:12px;color:var(--red)">⚠ Errore API: ${d.error.message}</div>`;
+      return;
+    }
+
+    // Controlla se la risposta è stata troncata
+    if (d.stop_reason === 'max_tokens') {
+      document.getElementById('pdfRes').innerHTML=`<div style="background:rgba(232,184,75,.1);border:1px solid var(--amber);border-radius:var(--r);padding:12px;font-size:12px;color:var(--amber)">⚠ Fattura troppo lunga — risposta troncata. I dati estratti potrebbero essere incompleti. Procedi con cautela o inserisci manualmente.</div>`;
+    }
+
+    const raw = d.content?.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim();
+
+    // Se il JSON è troncato prova a chiuderlo
+    let jsonStr = raw;
+    if (!jsonStr.endsWith('}')) {
+      // Cerca l'ultimo oggetto pezzo completo e chiudi il JSON
+      const lastComma = jsonStr.lastIndexOf('},{');
+      if (lastComma > 0) {
+        jsonStr = jsonStr.substring(0, lastComma) + '}],"note":null,"campi_mancanti":["FATTURA TRONCATA - alcuni pezzi potrebbero mancare"]}';
+      } else {
+        jsonStr = jsonStr + ']}';
+      }
+    }
+
+    extData = JSON.parse(jsonStr);
+
+    // Verifica e correggi i dati estratti
+    if (extData.pezzi) {
+      extData.pezzi = extData.pezzi.map(p => {
+        const q   = Math.round((parseFloat(p.quantita)||1)*100)/100;
+        const pu  = Math.round((parseFloat(p.prezzo_unitario)||0)*100)/100;
+        const sc  = parseFloat(p.sconto_percentuale||p.sconto)||0;
+        const tot = Math.round((parseFloat(p.totale_riga)||0)*100)/100;
+        const calc= Math.round(q * pu * (1 + sc/100) * 100) / 100;
+        if (!tot) p.totale_riga = calc;
+        p.quantita = q;
+        p.prezzo_unitario = pu;
+        p.sconto_percentuale = sc||0;
+        p.totale_riga = parseFloat(p.totale_riga)||calc;
+        return p;
+      });
+    }
+    renderPdfResult(extData);
+  } catch(e) {
+    setLdg(false);
+    document.getElementById('pdfRes').innerHTML=`<div style="background:rgba(232,80,80,.1);border:1px solid var(--red);border-radius:var(--r);padding:14px;font-size:12px;color:var(--red)">
+      <strong>⚠ Errore elaborazione</strong><br><br>
+      ${e.message?.includes('JSON')?'La risposta AI era incompleta (fattura troppo lunga). Prova a caricare il PDF di una sola pagina alla volta, oppure usa l\'inserimento manuale.':'Verifica la connessione e riprova.'}<br><br>
+      <span style="color:var(--text3);font-size:10px">${e.message}</span>
+    </div>`;
+  }
+}
+
+// ══════════════════════════
+// SESSION MANAGEMENT
+// ══════════════════════════
+let session = []; // [{label, doc, data, mId, mNome, forn, fornId, rows[]}]
+
+function buildRowsFromForm() {
+  const data=document.getElementById('m_data').value;
+  const mId=document.getElementById('m_mezzo').value;
+  const tipo=document.getElementById('m_tipo').value;
+  const pezzi=getPezzi();
+  if(!data||!mId||!tipo||!pezzi.length){alert('Compila: data, mezzo, tipo intervento e almeno un pezzo.');return null;}
+  const mz=allMezzi.find(m=>m.id===mId);
+  const forn=document.getElementById('m_forn').value;
+  const fornId=document.getElementById('m_fornid').value;
+  const doc=document.getElementById('m_doc').value;
+  const ore=document.getElementById('m_ore').value;
+  const eseg=document.getElementById('m_eseg').value;
+  const note=document.getElementById('m_note').value;
+  const rows=pezzi.map((p,i)=>({
+    id:'', data, mId, mNome:mz?.nome||'', macro:p.macroarea, comp:p.descrizione, tipo,
+    fornId, forn, doc, qty:p.quantita, pu:p.prezzo_unitario, sc:(p.sconto!==''&&p.sconto!=null)?p.sconto:'', tot:p.totale_riga, ore, eseg, note
+  }));
+  return { label:doc||data, doc, data, mId, mNome:mz?.nome||'', forn, fornId, rows };
+}
+
+function doManual(action) {
+  const entry = buildRowsFromForm();
+  if(!entry) return;
+  if(action==='sheets') { cpRowsSheets(entry.rows, entry); return; }
+  if(action==='queue') {
+    session.push(entry);
+    updateSessionBar();
+    resetManualForm();
+    toast('✓ Fattura aggiunta alla coda! Inserisci la prossima.');
+    return;
+  }
+  // action==='excel': salva tutto in Excel incluso quello attuale
+  session.push(entry);
+  commitSession();
+}
+
+function commitSession() {
+  if(!session.length){toast('Nessuna fattura in coda');return;}
+  if(!wb){toast('⚠ Carica prima il file Excel');return;}
+  let totalRows=0;
+  session.forEach((entry,ei)=>{
+    // Riga vuota tra una fattura e l'altra nell'Excel
+    if(ei > 0) {
+      writeEmptyRow(ins + totalRows + (ei-1));
+      totalRows++;
+    }
+    const rows=entry.rows.map((r,i)=>({...r, id:`INT${String(nextIntId+totalRows+i).padStart(window._intDigits||4,'0')}`}));
+    writeToExcel(rows);
+    totalRows+=rows.length;
+  });
+  nextIntId+=totalRows;
+  parseStorico(); applyFilters();
+  const n=session.length;
+  const totEur=session.reduce((s,e)=>s+e.rows.reduce((ss,r)=>ss+(r.tot||0),0),0);
+  session=[];
+  updateSessionBar();
+  toast(`✓ ${n} fatture salvate in Excel! (${totalRows} righe)`);
+  // Show download prompt
+  const res=document.getElementById('manRes');
+  res.innerHTML=`<div style="background:rgba(110,231,135,.08);border:1px solid var(--green);border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:18px">✅</span>
+    <div style="flex:1"><strong style="color:var(--green2)">${n} fatture salvate — ${totalRows} righe — € ${fmt(totEur)}</strong>
+    <div style="font-size:11px;color:var(--text2);margin-top:3px">Quando hai finito tutte le fatture, scarica l'Excel una sola volta.</div></div>
+    <button class="btn-dl" onclick="downloadExcel()">⬇ Scarica Excel</button>
+    <button onclick="cpAllSheets()" style="background:rgba(75,174,232,.15);border:1px solid rgba(75,174,232,.3);border-radius:8px;padding:9px 14px;color:var(--blue);font-family:var(--mono);font-size:12px;cursor:pointer">⎘ Copia per Sheets</button>
+  </div>`;
+}
+
+function clearSession(){session=[];updateSessionBar();toast('Coda svuotata');}
+
+function toggleSessionDetail(){
+  const d=document.getElementById('sessionDetail');
+  const b=document.getElementById('btnVediCoda');
+  if(d.style.display==='none'){
+    d.style.display='';
+    renderSessionTable();
+    b.textContent='▲ Chiudi coda';
+  } else {
+    d.style.display='none';
+    b.textContent='👁 Vedi coda';
+  }
+}
+
+function renderSessionTable(){
+  const tbody=document.querySelector('#tblSession tbody');
+  tbody.innerHTML=session.map((e,i)=>{
+    const tot=e.rows.reduce((s,r)=>s+(r.tot||0),0);
+    return`<tr>
+      <td style="color:var(--text3)">${i+1}</td>
+      <td>${e.doc||'—'}</td><td>${e.data}</td>
+      <td>${e.mNome||e.mId}</td><td>${e.forn||'—'}</td>
+      <td>${e.rows.length}</td>
+      <td style="color:var(--green2)">€ ${fmt(tot)}</td>
+      <td><button onclick="removeFromSession(${i})" style="background:none;border:1px solid rgba(232,80,80,.3);border-radius:4px;color:var(--red);cursor:pointer;font-size:11px;padding:2px 7px">✕</button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" class="empty">Coda vuota</td></tr>';
+}
+
+function removeFromSession(i){session.splice(i,1);updateSessionBar();renderSessionTable();toast('Rimossa dalla coda');}
+
+function updateSessionBar(){
+  const bar=document.getElementById('sessionBar');
+  if(!session.length){bar.style.display='none';return;}
+  bar.style.display='block';
+  document.getElementById('sessionCount').textContent=session.length;
+  const tot=session.reduce((s,e)=>s+e.rows.reduce((ss,r)=>ss+(r.tot||0),0),0);
+  document.getElementById('sessionTotal').textContent='€ '+fmt(tot);
+}
+
+// ── copia universale: funziona su file://, http://, https:// ──
+function copyToClipboard(text, successMsg, extraFn) {
+  if (!text || !text.trim()) { toast('⚠ Nessun dato da copiare'); return; }
+  const doSuccess = () => { toast(successMsg); if(extraFn) extraFn(); };
+  // Metodo 1: API moderna
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(doSuccess)
+      .catch(() => fallbackCopy(text, successMsg, extraFn));
+  } else {
+    fallbackCopy(text, successMsg, extraFn);
+  }
+}
+
+function fallbackCopy(text, successMsg, extraFn) {
+  // Metodo 2: textarea + execCommand (funziona su file://)
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try {
+    const ok = document.execCommand('copy');
+    if (ok) { toast(successMsg); if(extraFn) extraFn(); }
+    else { showCopyModal(text); }
+  } catch(e) { showCopyModal(text); }
+  document.body.removeChild(ta);
+}
+
+function showCopyModal(text) {
+  // Metodo 3: mostra il testo in un modal per copia manuale
+  const existing = document.getElementById('copyModal');
+  if (existing) existing.remove();
+  const m = document.createElement('div');
+  m.id = 'copyModal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  m.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:20px;width:min(600px,94vw);max-height:80vh;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-family:var(--sans);font-weight:700;font-size:13px">Copia manuale — seleziona tutto e Ctrl+C</span>
+      <button onclick="document.getElementById('copyModal').remove()" style="background:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px;color:var(--text3);cursor:pointer;font-size:16px">×</button>
+    </div>
+    <textarea style="flex:1;min-height:200px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--mono);font-size:11px;padding:10px;resize:vertical" onclick="this.select()">${text.replace(/</g,'&lt;')}</textarea>
+    <div style="font-size:11px;color:var(--text3)">Clicca nel riquadro → Ctrl+A → Ctrl+C → incolla su Google Sheets</div>
+  </div>`;
+  document.body.appendChild(m);
+  m.querySelector('textarea').select();
+}
+
+function cpSession(){
+  if(!session.length){toast('Coda vuota');return;}
+  const allRows=session.flatMap(e=>e.rows);
+  // Raggruppa per fattura, riga vuota tra fatture, nota solo sulla prima riga
+  let lines=[];
+  let lastKey=null;
+  allRows.forEach(r=>{
+    const key=r.mId+'|'+r.doc+'|'+r.forn;
+    const isFirst = key!==lastKey;
+    if(lastKey!==null && isFirst) lines.push(''); // riga vuota tra fatture
+    const qty=parseFloat(r.qty)||0, pu=parseFloat(r.pu)||0, sc=parseFloat(r.sc)||0;
+    const tot=r.tot&&r.tot>0 ? r.tot : Math.round(qty*pu*(1+sc/100)*100)/100;
+    const nota = isFirst ? (r.note||'') : '';
+    lines.push([r.data,r.mId,r.mNome,r.macro,r.comp,r.tipo,r.forn,r.doc,
+      fmtEur(qty),fmtEur(pu),(sc?fmtEur(sc):''),fmtEur(tot),r.ore||'',nota].join('\t'));
+    lastKey=key;
+  });
+  copyToClipboard(lines.join('\n'), '✓ Coda copiata per Google Sheets!');
+}
+
+function cpAllSheets(){
+  if(!allStorico.length){toast('Nessun dato storico');return;}
+  const lines=allStorico.map(r=>[r.id,r.data,r.mId,r.mNome,r.macro,r.comp,r.tipo,r.forn,r.doc,fmtEur(r.qty),fmtEur(r.pu),(r.sc!==''&&r.sc!=null?fmtEur(r.sc):''),fmtEur(r.tot),r.ore,r.note].join('\t'));
+  copyToClipboard(lines.join('\n'), '✓ Tutto lo storico copiato per Google Sheets!');
+}
+
+function cpRowsSheets(rows, entry){
+  const lines=rows.map((r,idx)=>{
+    const qty=parseFloat(r.qty)||0, pu=parseFloat(r.pu)||0, sc=parseFloat(r.sc)||0;
+    const tot=r.tot&&r.tot>0 ? r.tot : Math.round(qty*pu*(1+sc/100)*100)/100;
+    // Nota solo sulla prima riga del blocco
+    const nota = idx===0 ? (r.note||'') : '';
+    return [r.data,r.mId,r.mNome,r.macro,r.comp,r.tipo,r.forn,r.doc,
+      fmtEur(qty),fmtEur(pu),(sc?fmtEur(sc):''),fmtEur(tot),r.ore||'',nota].join('\t');
+  });
+  const extra = () => {
+    const el=document.getElementById('manRes');
+    if(el) el.innerHTML=`<div style="background:rgba(75,174,232,.08);border:1px solid var(--blue);border-radius:var(--r);padding:12px;font-size:12px;color:var(--blue)">✓ ${rows.length} righe copiate. Incolla su Google Sheets con Ctrl+V nel foglio Storico_Sostituzioni.</div>`;
+  };
+  copyToClipboard(lines.join('\n'), '✓ Copiato per Google Sheets!', extra);
+}
+
+function resetManualForm(){
+  ['m_data','m_doc','m_ore','m_eseg','m_forn','m_fornid','m_note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('m_mezzo').value='';
+  document.getElementById('m_tipo').value='';
+  document.getElementById('pezziList').innerHTML='';
+  document.getElementById('manRes').innerHTML='';
+  pCnt=0; addPezzo();
+  document.getElementById('p-upload').scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── PDF RESULT ──
+function renderPdfResult(d) {
+  const mOpts = allMezzi.map(m=>`<option value="${m.id}">${m.id} — ${m.nome}</option>`).join('');
+  const pRows = (d.pezzi||[]).map(p=>{
+    const q   = parseFloat(p.quantita)||1;
+    const pu  = parseFloat(p.prezzo_unitario)||0;
+    const sc  = parseFloat(p.sconto_percentuale||p.sconto)||0;
+    const tot = parseFloat(p.totale_riga)||Math.round(q*pu*(1+sc/100)*100)/100;
+    const calc= Math.round(q*pu*(1+sc/100)*100)/100;
+    const ok  = Math.abs(calc-tot)<0.10||tot===0;
+    const warn= !ok?`style="color:var(--amber)" title="Verifica: ${q}×${fmtEur(pu)}×(1+${sc}/100)=${fmtEur(calc)}"`:'' ;
+    const scText = sc ? `<span style="color:var(--amber);font-size:10px;font-weight:600">${sc>0?'+':''}${sc}%</span>` : '<span style="color:var(--text3)">—</span>';
+    return `<tr>
+      <td>${p.descrizione}</td>
+      <td style="color:var(--text3);font-size:10px">${p.macroarea||'—'}</td>
+      <td style="text-align:center">${q}</td>
+      <td style="text-align:right">${fmtEur(pu)}</td>
+      <td style="text-align:center">${scText}</td>
+      <td style="text-align:right;font-weight:600;color:var(--green2)" ${warn}>${fmtEur(tot)}${!ok?' ⚠':''}</td>
+    </tr>`;
+  }).join('');
+  const miss = (d.campi_mancanti||[]).length>0;
+  document.getElementById('pdfRes').innerHTML=`<div class="card">
+    <div class="card-hdr"><div class="card-title">✓ ${(d.pezzi||[]).length} pezzi estratti</div><span class="badge ${miss?'amber':'green'}">${miss?'INCOMPLETO':'OK'}</span></div>
+    <div id="mzPick2" class="mz-pick"><span class="mz-lbl">⚠ Mezzo?</span><select class="mz-sel" id="mzSel2"><option value="">— seleziona —</option>${mOpts}</select><button class="btn-conf" onclick="confMezzo2()">✓ Conferma</button></div>
+    <div id="mzOk2" style="display:none" class="mz-ok">✓ <span id="mzTxt2"></span><button class="btn-chg" onclick="chgMezzo2()">cambia</button></div>
+    <div style="padding:8px 12px 4px;font-size:10px;color:var(--text3)">FORNITORE: ${d.fornitore||'—'} · DATA: ${d.data||'—'} · DOC: ${d.numero_documento||'—'}</div>
+    <div class="tbl-scroll"><table class="tbl"><thead><tr><th>Componente</th><th>Macroarea</th><th style="text-align:center">Qtà</th><th style="text-align:right">P.Unitario</th><th style="text-align:center">Sconto</th><th style="text-align:right">Totale €</th></tr></thead><tbody>${pRows||'<tr><td colspan="6" class="empty">Nessun pezzo</td></tr>'}</tbody></table></div>
+    <div style="padding:10px 12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-main" id="btnAddQueue" disabled onclick="savePdfToSession('queue')" style="flex:1;margin:0;background:var(--bg3);color:var(--green2);border:1px solid var(--green);min-width:140px">+ Aggiungi alla coda</button>
+      <button class="btn-main" id="btnCpSheets" disabled onclick="savePdfToSession('sheets')" style="flex:1;margin:0;background:rgba(75,174,232,.15);color:var(--blue);border:1px solid rgba(75,174,232,.3);min-width:140px">⎘ Copia per Sheets</button>
+      <button class="btn-main" id="btnSave2" disabled onclick="savePdfToSession('excel')" style="flex:1;margin:0;min-width:140px">⬇ Salva in Excel</button>
+    </div>
+  </div>`;
+}
+
+function confMezzo2() {
+  const sel=document.getElementById('mzSel2');
+  if(!sel?.value) return;
+  selMezzo = allMezzi.find(m=>m.id===sel.value);
+  document.getElementById('mzPick2').style.display='none';
+  document.getElementById('mzOk2').style.display='flex';
+  document.getElementById('mzTxt2').textContent=`${selMezzo.id} — ${selMezzo.nome}`;
+  ['btnSave2','btnAddQueue','btnCpSheets'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false;});
+}
+function chgMezzo2(){
+  selMezzo=null;
+  document.getElementById('mzPick2').style.display='flex';
+  document.getElementById('mzOk2').style.display='none';
+  ['btnSave2','btnAddQueue','btnCpSheets'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true;});
+}
+
+function savePdfToSession(action) {
+  if(!extData||!selMezzo) return;
+  const fornMatch = allFornitori.find(f=>f.nome===extData.fornitore||(extData.fornitore||'').includes(f.nome));
+  const rows = (extData.pezzi||[]).map(p=>({
+    id:'', data:extData.data||'',
+    mId:selMezzo.id, mNome:selMezzo.nome, macro:p.macroarea||'',
+    comp:p.descrizione||'', tipo:extData.tipo_intervento||'',
+    fornId:fornMatch?fornMatch.id:'', forn:extData.fornitore||'',
+    doc:extData.numero_documento||'',
+    qty:p.quantita||1, pu:p.prezzo_unitario||0,
+    sc:(p.sconto_percentuale!==0&&p.sconto_percentuale!=null)?p.sconto_percentuale:(p.sconto||''),
+    tot:p.totale_riga||0,
+    ore:extData.ore_motore||'', eseg:'', note:extData.note||''
+  }));
+  const entry={label:extData.numero_documento||extData.data, doc:extData.numero_documento||'', data:extData.data||'', mId:selMezzo.id, mNome:selMezzo.nome, forn:extData.fornitore||'', fornId:fornMatch?.id||'', rows};
+
+  if(action==='sheets'){
+    cpRowsSheets(rows, entry);
+    return;
+  }
+  if(action==='queue'){
+    session.push(entry);
+    updateSessionBar();
+    // Reset PDF zone for next doc
+    fileB64=null; fileType=null; extData=null; selMezzo=null;
+    document.getElementById('pdfRes').innerHTML=`<div style="background:rgba(110,231,135,.08);border:1px solid var(--green);border-radius:var(--r);padding:12px;font-size:12px;color:var(--green2)">✓ Aggiunta alla coda! Carica il prossimo documento.</div>`;
+    document.getElementById('fpInfo').style.display='none';
+    document.getElementById('btnEx').disabled=true;
+    document.getElementById('dz').querySelector('input').value='';
+    toast('✓ Fattura in coda! Carica la prossima.');
+    return;
+  }
+  // excel: salva subito
+  session.push(entry);
+  commitSession();
+}
+
+// Manual mode helpers
+function addPezzo() {
+  pCnt++;
+  const id=pCnt;
+  const d=document.createElement('div');
+  d.className='pezzo-item'; d.id=`pz_${id}`;
+  d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:10px;color:var(--green)">PEZZO #${id}</span><button onclick="rmPz(${id})" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--text3);cursor:pointer;padding:2px 8px;font-size:12px">×</button></div>
+    <div class="fgrid">
+      <div class="fg2 full"><label>Descrizione *</label><input id="pd_${id}" placeholder="es. Filtro olio motore (cod. articolo)"></div>
+      <div class="fg2 full"><label>Macroarea</label><select id="pm_${id}"><option value="">—</option>${MACROAREE.map(a=>`<option>${a}</option>`).join('')}</select></div>
+      <div class="fg2"><label>Quantità</label><input type="number" id="pq_${id}" value="1" min="0" step="0.01" oninput="calcT(${id})"></div>
+      <div class="fg2"><label>Prezzo unitario €</label><input type="number" id="pu_${id}" placeholder="es. 52,35" step="0.01" oninput="calcT(${id})"></div>
+      <div class="fg2"><label>Sconto % <span style="color:var(--text3);font-size:9px">(es. -20)</span></label><input type="number" id="ps_${id}" placeholder="0" step="0.01" oninput="calcT(${id})"></div>
+      <div class="fg2"><label>Totale riga € <span style="color:var(--green2);font-size:9px">(auto)</span></label><input id="pt_${id}" placeholder="—" readonly style="opacity:.75;background:rgba(110,231,135,.06);border-color:rgba(110,231,135,.2);background:var(--bg3);border:1px solid rgba(110,231,135,.2);border-radius:var(--r);color:var(--green2);font-family:var(--mono);font-size:12px;padding:7px 10px"></div>
+    </div>`;
+  document.getElementById('pezziList').appendChild(d);
+}
+function calcT(id){
+  const q  = parseFloat(document.getElementById(`pq_${id}`)?.value)||0;
+  const pu = parseFloat(document.getElementById(`pu_${id}`)?.value)||0;
+  const sc = parseFloat(document.getElementById(`ps_${id}`)?.value)||0;
+  if(!pu) return;
+  const tot = Math.round(q * pu * (1 + sc/100) * 100) / 100;
+  const elT = document.getElementById(`pt_${id}`);
+  if(elT && q) elT.value = fmtEur(tot);
+}
+function rmPz(id){document.getElementById(`pz_${id}`)?.remove();}
+function getPezzi(){
+  return Array.from(document.querySelectorAll('.pezzo-item')).map(c=>{
+    const id  = c.id.replace('pz_','');
+    const q   = parseFloat(document.getElementById(`pq_${id}`)?.value)||1;
+    const pu  = parseFloat(document.getElementById(`pu_${id}`)?.value)||0;
+    const sc  = parseFloat(document.getElementById(`ps_${id}`)?.value)||0;
+    const tot = Math.round(q * pu * (1 + sc/100) * 100) / 100;
+    return{
+      descrizione:     document.getElementById(`pd_${id}`)?.value||'',
+      macroarea:       document.getElementById(`pm_${id}`)?.value||'',
+      quantita:        q,
+      prezzo_unitario: pu,
+      sconto:          sc||'',
+      totale_riga:     tot
+    };
+  }).filter(p=>p.descrizione);
+}
+
+// ══════════════════════════
+// EXCEL WRITE
+// ══════════════════════════
+function writeEmptyRow(rowIndex) {
+  if(!wb) return;
+  const sheet = wb.Sheets['Storico_Sostituzioni'];
+  if(!sheet) return;
+  const range = XLSX.utils.decode_range(sheet['!ref']||'A1:P200');
+  // Non scrive nulla — la riga è già vuota, serve solo a far avanzare l'indice
+  if(rowIndex > range.e.r) { range.e.r = rowIndex; sheet['!ref'] = XLSX.utils.encode_range(range); }
+}
+
+function writeToExcel(rows) {
+  if(!wb) return false;
+  const sheet = wb.Sheets['Storico_Sostituzioni'];
+  if(!sheet) return false;
+  const range = XLSX.utils.decode_range(sheet['!ref']||'A1:Q100');
+  // Find first empty row after last data row
+  let lastDataRow = window._lastExcelRow || 2;
+  if(!window._lastExcelRow) {
+    for(let r=2; r<=range.e.r+2; r++) {
+      const c0 = sheet[XLSX.utils.encode_cell({r,c:0})];
+      const c1 = sheet[XLSX.utils.encode_cell({r,c:1})];
+      if((!c0||!c0.v) && (!c1||!c1.v)) { lastDataRow=r; break; }
+      lastDataRow=r+1;
+    }
+  }
+  rows.forEach((row,idx)=>{
+    const R=lastDataRow+idx;
+    // Struttura reale Excel:
+    // A=ID, B=Data, C=IDMezzo, D=NomeMezzo(auto), E=Macroarea, F=Componente,
+    // G=Tipo, H=Fornitore, I=IDFornitore, J=nFattura,
+    // K=Quantità, L=PrezzoUnitario, M=Sconto%, N=Totale(formula), O=Ore, P=Note
+    const scVal = row.sc!=null&&row.sc!==''&&!isNaN(parseFloat(row.sc)) ? parseFloat(row.sc) : null;
+    const rNum = R+1;
+    // Nota solo sulla prima riga del gruppo (idx===0), le altre vuote
+    const noteVal = idx===0
+      ? [row.note, row.eseg ? 'Eseguito da: '+row.eseg : ''].filter(Boolean).join(' — ')
+      : '';
+    const cols = [
+      {v:row.id||'',            t:'s'}, // A
+      {v:row.data||'',          t:'s'}, // B
+      {v:row.mId||'',           t:'s'}, // C
+      {v:row.mNome||'',         t:'s'}, // D
+      {v:row.macro||'',         t:'s'}, // E
+      {v:row.comp||'',          t:'s'}, // F
+      {v:row.tipo||'',          t:'s'}, // G
+      {v:row.forn||'',          t:'s'}, // H - Fornitore (ID Fornitore in I è auto da Excel)
+      {v:'',                    t:'s'}, // I - lasciato vuoto: Excel lo compila con formula
+      {v:row.doc||'',           t:'s'}, // J
+      {v:parseFloat(row.qty)||1,t:'n'}, // K - Quantità
+      {v:parseFloat(row.pu)||0, t:'n'}, // L - Prezzo Unitario
+      scVal!=null?{v:scVal,t:'n'}:{v:'',t:'s'}, // M - Sconto %
+      null,                              // N - Totale (formula auto)
+      {v:row.ore||'',           t:'s'}, // O - Ore Motore
+      {v:noteVal||'',           t:'s'}, // P - Note
+    ];
+    cols.forEach((val,ci)=>{
+      if(val===null){
+        const addr=XLSX.utils.encode_cell({r:R,c:ci});
+        sheet[addr]={f:`=(K${rNum}*L${rNum})*(1+(M${rNum}/100))`,t:'n'};
+        return;
+      }
+      if(val.v===''||val.v==null) return;
+      const addr=XLSX.utils.encode_cell({r:R,c:ci});
+      sheet[addr]={v:val.v,t:val.t};
+    });
+    if(R>range.e.r){range.e.r=R;sheet['!ref']=XLSX.utils.encode_range(range);}
+  });
+  window._lastExcelRow = lastDataRow + rows.length; // prossima riga disponibile
+  return true;
+}
+
+function downloadExcel() {
+  if(!wb) return;
+  XLSX.writeFile(wb, excelFileName||'GestMezzi_aggiornato.xlsx');
+  toast('✓ Excel scaricato!');
+}
+
+function showDownloadBanner(n, targetId) {
+  const old=document.getElementById('dlBanner'); if(old) old.remove();
+  const b=document.createElement('div');
+  b.id='dlBanner'; b.className='result-banner';
+  b.innerHTML=`<span style="font-size:20px">📊</span><div style="flex:1"><strong style="color:var(--green2)">${n} riga${n>1?'ghe':''} aggiunte</strong><div style="font-size:11px;color:var(--text2);margin-top:3px">Puoi inserire altre fatture — scarica Excel solo alla fine.</div></div><button class="btn-dl" onclick="downloadExcel()">⬇ Scarica Excel</button><button onclick="cpAllSheets()" style="background:rgba(75,174,232,.15);border:1px solid rgba(75,174,232,.3);border-radius:8px;padding:9px 14px;color:var(--blue);font-family:var(--mono);font-size:12px;cursor:pointer;margin-left:8px">⎘ Copia per Sheets</button>`;
+  const target=document.getElementById(targetId);
+  if(target) target.appendChild(b);
+}
+
+// ══════════════════════════
+// HELPERS
+// ══════════════════════════
+function fmt(n) { if(n==null||isNaN(n))return'0'; return Math.round(n).toLocaleString('it-IT'); }
+function fmtEur(n) {
+  // Formatta con virgola per Excel italiano: es. 52,35
+  if(n==null||isNaN(n)) return '0,00';
+  return n.toFixed(2).replace('.',',');
+}
+function fmtEurNum(n) {
+  // Restituisce numero per Excel (sempre punto decimale internamente)
+  return parseFloat(n)||0;
+}
+function fmtK(n) { if(n>=1000) return (n/1000).toFixed(1)+'k'; return fmt(n); }
+function toast(msg,dur=2200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+
+// init pezzo in manual mode
+document.addEventListener('DOMContentLoaded', () => {
+  addPezzo();
+  // Mobile detection
+  const isMobile = window.innerWidth <= 640 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    document.getElementById('mobileNav').style.display = 'block';
+    document.querySelector('.tab-bar').style.display = 'none';
+    document.querySelector('.filters').style.top = '50px';
+  }
+});
+
+function setMobileNav(el) {
+  document.querySelectorAll('.mob-nav-btn').forEach(b => b.style.color='var(--text2)');
+  el.style.color = 'var(--green2)';
+}
+
+// ══════════════════════════
+// CARBURANTE STATE
+// ══════════════════════════
+let allPrelievi = [];
+let allUma = [];
+let allCisterne = [];
+let nextPrevId = 31;
+const TRATTORISTI_DEFAULT = ['Antonio','Giuseppe','Marco','Luigi','Carmelo'];
+
+function parseCarburante() {
+  // Parse Carburante_Prelievi
+  const ws = wb.Sheets['Carburante_Prelievi'];
+  if (!ws) return;
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+  let hdr = rows.findIndex(r => r.some(c => String(c).includes('ID Prelievo')));
+  allPrelievi = [];
+  for (let i = hdr+1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!String(r[0]).startsWith('P')) continue;
+    allPrelievi.push({
+      id: String(r[0]), data: String(r[1]), anno: parseInt(r[2])||0,
+      cistId: String(r[3]), cist: String(r[4]),
+      mId: String(r[5]), mNome: String(r[6]),
+      tratt: String(r[7]), litri: parseFloat(r[8])||0, note: String(r[9])
+    });
+  }
+  // Compute next ID
+  let maxN = 0;
+  allPrelievi.forEach(p => { const m = p.id.match(/P(\d+)/); if(m) maxN = Math.max(maxN, parseInt(m[1])); });
+  nextPrevId = maxN + 1;
+
+  // Parse UMA
+  const wsU = wb.Sheets['Carburante_UMA'];
+  if (!wsU) return;
+  const rowsU = XLSX.utils.sheet_to_json(wsU, { header:1, defval:'' });
+  allUma = [];
+  let uHdr = rowsU.findIndex(r => r.some(c => String(c).includes('Anno')));
+  for (let i = uHdr+1; i < rowsU.length; i++) {
+    const r = rowsU[i];
+    if (!r[0] || isNaN(parseInt(r[0]))) continue;
+    allUma.push({ anno: parseInt(r[0]), assegnato: parseFloat(r[1])||0, decreto: String(r[6]||'') });
+  }
+
+  // Cisterne from sheet
+  allCisterne = [
+    { id:'C01', nome:'Cisterna Principale – Stalla' },
+    { id:'C02', nome:'Cisterna Secondaria – Campo' },
+    { id:'C03', nome:'Cisterna Mobile' },
+  ];
+  populateFuelSelects();
+}
+
+function populateFuelSelects() {
+  // Cisterne select
+  const sc = document.getElementById('f_cist');
+  sc.innerHTML = '<option value="">— seleziona —</option>';
+  allCisterne.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=`${c.id} — ${c.nome}`; sc.appendChild(o); });
+  // Mezzo select for fuel
+  const sm = document.getElementById('f_mezzo');
+  sm.innerHTML = '<option value="">— seleziona —</option>';
+  allMezzi.forEach(m => { const o=document.createElement('option'); o.value=m.id; o.textContent=`${m.id} — ${m.nome}`; sm.appendChild(o); });
+  // Trattoristi datalist
+  const dl = document.getElementById('dlTratt');
+  const trattoristi = [...new Set([...TRATTORISTI_DEFAULT, ...allPrelievi.map(p=>p.tratt).filter(Boolean)])];
+  dl.innerHTML = trattoristi.map(t=>`<option value="${t}">`).join('');
+  // Set default date
+  document.getElementById('f_data').value = new Date().toISOString().slice(0,10);
+}
+
+function renderCarburante() {
+  const yearFilter = parseInt(document.getElementById('fuelYearFilter')?.value)||0;
+  const anno = yearFilter || new Date().getFullYear();
+  const prev = yearFilter ? allPrelievi.filter(p=>p.anno===anno) : allPrelievi;
+  const uma = allUma.find(u=>u.anno===anno);
+  const assegnato = uma ? uma.assegnato : 0;
+  const usato = prev.reduce((s,p)=>s+p.litri,0);
+  const residuo = assegnato - usato;
+  const pct = assegnato > 0 ? (usato/assegnato*100).toFixed(1) : 0;
+
+  // KPI
+  document.getElementById('k-uma-assegnato').textContent = fmt(assegnato) + ' L';
+  document.getElementById('k-uma-usato').textContent = fmt(usato) + ' L';
+  document.getElementById('k-uma-pct').textContent = `${pct}% dell'assegnazione`;
+  document.getElementById('k-uma-residuo').textContent = fmt(residuo) + ' L';
+  const mezziUnici = [...new Set(prev.map(p=>p.mId))].length;
+  document.getElementById('k-uma-mezzi').textContent = mezziUnici;
+  const mediaL = prev.length ? (usato/prev.length).toFixed(0) : 0;
+  document.getElementById('k-uma-media').textContent = mediaL + ' L';
+
+  // Alert se residuo < 20%
+  const alertEl = document.getElementById('kUmaAlert');
+  if (assegnato > 0 && pct > 80) {
+    alertEl.style.display = '';
+    document.getElementById('k-uma-alert-val').textContent = `${(100-pct).toFixed(0)}%`;
+    alertEl.querySelector('.kpi-lbl').textContent = 'Residuo critico';
+  } else alertEl.style.display = 'none';
+
+  document.getElementById('fuelBadge').style.display = (assegnato > 0 && pct > 80) ? '' : 'none';
+
+  // Chart: consumo per mezzo
+  const mzAgg = {};
+  prev.forEach(p => { mzAgg[p.mNome||p.mId] = (mzAgg[p.mNome||p.mId]||0) + p.litri; });
+  const mzSorted = Object.entries(mzAgg).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxL = mzSorted[0]?.[1]||1;
+  const fColors=['#5cc8ff','#6ee787','#ffb938','#ff6b6b','#c4a2ff','#4be8c8','#e8784b','#84b0e8','#c8e878','#e878b0'];
+  document.getElementById('chartFuelMezzo').innerHTML = mzSorted.map(([nome,litri],i)=>
+    `<div class="bar-row">
+      <div class="bar-lbl" title="${nome}">${nome}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(litri/maxL*100).toFixed(0)}%;background:${fColors[i%fColors.length]}"></div></div>
+      <div class="bar-val">${fmt(litri)} L</div>
+    </div>`
+  ).join('') || '<div class="empty">Nessun dato</div>';
+  document.getElementById('fuelPeriodSub').textContent = anno;
+
+  // Chart: per cisterna (donut)
+  const cistAgg = {};
+  prev.forEach(p => { cistAgg[p.cist||p.cistId] = (cistAgg[p.cist||p.cistId]||0) + p.litri; });
+  const cistEntries = Object.entries(cistAgg).sort((a,b)=>b[1]-a[1]);
+  const totalL = cistEntries.reduce((s,[,v])=>s+v,0);
+  if (cistEntries.length && totalL > 0) {
+    const cx=60,cy=60,R=55,r=30; let angle=-Math.PI/2; let paths='';
+    cistEntries.forEach(([k,v],i)=>{
+      const frac=v/totalL, a0=angle, a1=angle+frac*2*Math.PI;
+      const x0=cx+R*Math.cos(a0),y0=cy+R*Math.sin(a0),x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
+      const xi0=cx+r*Math.cos(a0),yi0=cy+r*Math.sin(a0),xi1=cx+r*Math.cos(a1),yi1=cy+r*Math.sin(a1);
+      const lg=frac>.5?1:0;
+      paths+=`<path d="M${xi0},${yi0} L${x0},${y0} A${R},${R} 0 ${lg},1 ${x1},${y1} L${xi1},${yi1} A${r},${r} 0 ${lg},0 ${xi0},${yi0}" fill="${fColors[i]}" opacity=".9"/>`;
+      angle=a1;
+    });
+    const legend = cistEntries.map(([k,v],i)=>
+      `<div class="dl-row"><div class="dl-dot" style="background:${fColors[i]}"></div><span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k.replace('Cisterna ','')}</span><span class="dl-pct">${(v/totalL*100).toFixed(0)}%</span></div>`
+    ).join('');
+    document.getElementById('chartFuelCist').innerHTML=`<svg class="donut-svg" viewBox="0 0 120 120" width="110" height="110">${paths}<text x="60" y="65" text-anchor="middle" fill="#e8f0e0" font-size="9" font-family="DM Mono">${fmtK(totalL)}L</text></svg><div class="donut-legend">${legend}</div>`;
+  } else document.getElementById('chartFuelCist').innerHTML='<div class="empty">—</div>';
+
+  // Trend mensile litri
+  const months=['01','02','03','04','05','06','07','08','09','10','11','12'];
+  const byM = {}; months.forEach(m=>byM[`${anno}-${m}`]=0);
+  prev.forEach(p=>{ const m=String(p.data).slice(0,7); if(byM[m]!==undefined) byM[m]+=p.litri; });
+  const mVals = months.map(m=>byM[`${anno}-${m}`]||0);
+  const maxM = Math.max(...mVals,1);
+  const W=500,H=90,PAD=6,lPad=45;
+  const n=12, xStep=(W-lPad-PAD)/(n-1);
+  const yS=v=>H-PAD-(v/maxM)*(H-2*PAD-12);
+  const pts=mVals.map((v,i)=>`${lPad+i*xStep},${yS(v)}`).join(' ');
+  const area=`${lPad},${H-PAD} `+pts+` ${lPad+(n-1)*xStep},${H-PAD}`;
+  const xLbls=months.map((m,i)=>`<text x="${lPad+i*xStep}" y="${H+4}" text-anchor="middle" fill="rgba(232,240,224,.35)" font-size="7">${m}</text>`).join('');
+  document.getElementById('trendFuel').innerHTML=`<svg viewBox="0 0 ${W} ${H+10}" style="width:100%;height:${H+12}px">
+    <polygon points="${area}" fill="rgba(75,174,232,.12)"/>
+    <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>
+    ${mVals.map((v,i)=>`<circle cx="${lPad+i*xStep}" cy="${yS(v)}" r="3" fill="${v===maxM?'var(--amber)':'var(--blue)'}"/>`).join('')}
+    ${xLbls}
+  </svg>`;
+
+  // Chart: per trattorista
+  const trAgg = {};
+  prev.forEach(p=>{ trAgg[p.tratt||'—']=(trAgg[p.tratt||'—']||0)+p.litri; });
+  const trSorted = Object.entries(trAgg).sort((a,b)=>b[1]-a[1]);
+  const maxT = trSorted[0]?.[1]||1;
+  document.getElementById('chartFuelTratt').innerHTML = trSorted.map(([nome,litri],i)=>
+    `<div class="bar-row"><div class="bar-lbl">${nome}</div><div class="bar-track"><div class="bar-fill" style="width:${(litri/maxT*100).toFixed(0)}%;background:${fColors[i%fColors.length]}"></div></div><div class="bar-val">${fmt(litri)} L</div></div>`
+  ).join('') || '<div class="empty">Nessun dato</div>';
+
+  // Table
+  const sorted = prev.slice().sort((a,b)=>b.data.localeCompare(a.data));
+  document.getElementById('fuelCount').textContent = sorted.length + ' prelievi';
+  document.querySelector('#tblFuel tbody').innerHTML = sorted.slice(0,100).map(p=>
+    `<tr><td style="color:var(--text3);font-size:10px">${p.id}</td><td>${p.data}</td><td>${p.cist}</td><td>${p.mNome||p.mId}</td><td>${p.tratt}</td><td style="color:var(--blue);font-weight:600">${fmt(p.litri)} L</td><td style="color:var(--text3)">${p.note}</td></tr>`
+  ).join('') || '<tr><td colspan="7" class="empty">Nessun prelievo</td></tr>';
+}
+
+function saveFuelEntry() {
+  const data=document.getElementById('f_data').value;
+  const cistId=document.getElementById('f_cist').value;
+  const mId=document.getElementById('f_mezzo').value;
+  const tratt=document.getElementById('f_tratt').value;
+  const litri=parseFloat(document.getElementById('f_litri').value)||0;
+  const note=document.getElementById('f_note').value;
+  if(!data||!cistId||!mId||!tratt||!litri){alert('Compila tutti i campi obbligatori (*)');return;}
+  if(!wb){alert('Carica prima il file Excel');return;}
+  const cist = allCisterne.find(c=>c.id===cistId);
+  const mz = allMezzi.find(m=>m.id===mId);
+  const anno = parseInt(data.slice(0,4));
+  const id = `P${String(nextPrevId).padStart(3,'0')}`;
+  const row = [id, data, anno, cistId, cist?.nome||'', mId, mz?.nome||'', tratt, litri, note];
+
+  const sheet = wb.Sheets['Carburante_Prelievi'];
+  const range = XLSX.utils.decode_range(sheet['!ref']||'A1:J200');
+  let insertRow = 2;
+  for(let r=2; r<=range.e.r+1; r++){
+    const cell=sheet[XLSX.utils.encode_cell({r,c:0})];
+    if(!cell||!String(cell.v||'').startsWith('P')){insertRow=r;break;}
+    insertRow=r+1;
+  }
+  row.forEach((v,c)=>{
+    const addr=XLSX.utils.encode_cell({r:insertRow,c});
+    sheet[addr]={v:v,t:typeof v==='number'?'n':'s'};
+  });
+  if(insertRow>range.e.r){range.e.r=insertRow;sheet['!ref']=XLSX.utils.encode_range(range);}
+
+  nextPrevId++;
+  allPrelievi.push({id,data,anno,cistId,cist:cist?.nome||'',mId,mNome:mz?.nome||'',tratt,litri,note});
+  document.getElementById('f_litri').value='';
+  document.getElementById('f_note').value='';
+  renderCarburante();
+  document.getElementById('fuelSaveRes').innerHTML=`<div style="background:rgba(75,174,232,.1);border:1px solid var(--blue);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--blue);display:flex;align-items:center;justify-content:space-between">✓ ${litri}L registrati su ${cist?.nome||cistId} — ${mz?.nome||mId}<button class="btn-dl" onclick="downloadExcel()" style="font-size:11px;padding:6px 12px">⬇ Scarica Excel</button></div>`;
+  toast('✓ Prelievo registrato!');
+}
+
+// ══════════════════════════
+// SCADENZE STATE
+// ══════════════════════════
+let allScadenze = [];
+
+function parseScadenze() {
+  allScadenze = [];
+  const today = new Date();
+
+  const calcStato = (gg) => {
+    if (gg === null || gg === undefined || isNaN(gg)) return '';
+    if (gg < 0) return 'scaduto';
+    if (gg < 30) return 'urgente';
+    if (gg < 90) return 'prox';
+    return 'ok';
+  };
+  const ggDa = (dateVal) => giorniDaOggi(dateVal);
+
+  // ── 1. Foglio Scadenze_Revisioni (generico, se presente) ──
+  const wsSc = wb.Sheets['Scadenze_Revisioni'];
+  if (wsSc) {
+    const rows = XLSX.utils.sheet_to_json(wsSc, { header:1, defval:'', raw:false });
+    let hdr = rows.findIndex(r => r.some(c => String(c).includes('ID Mezzo')));
+    for (let i = hdr+1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!String(r[0]).startsWith('M')) continue;
+      const gg = ggDa(r[5]);
+      allScadenze.push({
+        mId:String(r[0]), mNome:String(r[1]), tipo:String(r[2])||'Revisione', cat:String(r[3]),
+        ultima:String(r[4]), pross:String(r[5]), gg, stato:calcStato(gg),
+        imp:String(r[8]), forn:String(r[9]), doc:String(r[10]), note:String(r[11])
+      });
+    }
+  }
+
+  // ── 2. Foglio Revisioni (col F = scadenza fine mese, col 6) ──
+  const wsR = wb.Sheets['Revisioni'];
+  if (wsR) {
+    const rows = XLSX.utils.sheet_to_json(wsR, { header:1, defval:'', raw:true });
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !String(r[0]||'').match(/^M\d/)) continue;
+      // F = col 5 (0-based) = data scadenza
+      const scad = cellDate(wsR, i, 5);
+      if (!scad) continue;
+      const gg = ggDa(scad);
+      allScadenze.push({
+        mId:String(r[0]), mNome:String(r[1]||''), tipo:'Revisione periodica',
+        cat:String(r[2]||''), ultima:'', pross:scad, gg, stato:calcStato(gg),
+        imp:'', forn:'', doc:'', note:'da foglio Revisioni'
+      });
+    }
+  }
+
+  // ── 3. Foglio Tagliandi (col F ore o data — usiamo stato testuale col L) ──
+  const wsT = wb.Sheets['Tagliandi'];
+  if (wsT) {
+    const rows = XLSX.utils.sheet_to_json(wsT, { header:1, defval:'', raw:true });
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !String(r[0]||'').match(/^M\d/)) continue;
+      // Sezione B (auto/camion) col K = data scad temporale (col 10)
+      const scadTempo = cellDate(wsT, i, 10);
+      if (scadTempo) {
+        const gg = ggDa(scadTempo);
+        allScadenze.push({
+          mId:String(r[0]), mNome:String(r[1]||''), tipo:'Tagliando',
+          cat:String(r[2]||''), ultima:'', pross:scadTempo, gg, stato:calcStato(gg),
+          imp:'', forn:'', doc:'', note:'da foglio Tagliandi'
+        });
+      }
+    }
+  }
+
+  // ── 4. Foglio Bollo (col G = scadenza, col 6) ──
+  const wsB = wb.Sheets['Bollo'];
+  if (wsB) {
+    const rows = XLSX.utils.sheet_to_json(wsB, { header:1, defval:'', raw:true });
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !String(r[0]||'').match(/^M\d/)) continue;
+      // G = col 6 (0-based) = scadenza bollo
+      const scad = cellDate(wsB, i, 6);
+      if (!scad) continue;
+      const gg = ggDa(scad);
+      allScadenze.push({
+        mId:String(r[0]), mNome:String(r[1]||''), tipo:'Bollo veicolo',
+        cat:String(r[2]||''), ultima:'', pross:scad, gg, stato:calcStato(gg),
+        imp:'', forn:'', doc:'', note:'da foglio Bollo'
+      });
+    }
+  }
+
+  // ── 5. Assicurazioni dal foglio Mezzi (col O = scadenza, col 14) ──
+  const wsM = wb.Sheets['Mezzi'];
+  if (wsM) {
+    const rows = XLSX.utils.sheet_to_json(wsM, { header:1, defval:'', raw:true });
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || !String(r[0]||'').match(/^M\d/)) continue;
+      const scad = cellDate(wsM, i, 14); // O = scadenza assicurazione
+      if (!scad) continue;
+      const gg = ggDa(scad);
+      allScadenze.push({
+        mId:String(r[0]), mNome:String(r[1]||''), tipo:'Assicurazione RCA',
+        cat:String(r[2]||''), ultima:'', pross:scad, gg, stato:calcStato(gg),
+        imp:'', forn:'', doc:'', note:'da foglio Mezzi'
+      });
+    }
+  }
+
+  populateScadSelects();
+}
+
+// Helper: legge il valore data di una cella (preciso, senza sfasamenti fuso orario)
+function cellDate(ws, rowIdx, colIdx) {
+  const addr = XLSX.utils.encode_cell({r:rowIdx, c:colIdx});
+  const cell = ws[addr];
+  if (!cell) return null;
+  let v = cell.v;
+  if (v == null || v === '') return null;
+  // Numero seriale Excel → data (conversione UTC-safe, niente sfasamento)
+  if (typeof v === 'number') {
+    // Excel serial: giorni da 1899-12-30. Calcolo diretto anno/mese/giorno in UTC.
+    const utcDays = Math.floor(v - 25569);
+    const ms = utcDays * 86400 * 1000;
+    const d = new Date(ms);
+    if (isNaN(d)) return null;
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth()+1).padStart(2,'0');
+    const day = String(d.getUTCDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  // Data nativa
+  if (v instanceof Date) {
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth()+1).padStart(2,'0');
+    const day = String(v.getUTCDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  // Stringa
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  // formato gg/mm/aaaa
+  const it = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (it) return `${it[3]}-${it[2].padStart(2,'0')}-${it[1].padStart(2,'0')}`;
+  return null;
+}
+
+// Calcola giorni tra oggi (mezzanotte) e una data YYYY-MM-DD, preciso
+function giorniDaOggi(dateStr) {
+  if (!dateStr) return null;
+  const [y,m,d] = dateStr.split('-').map(Number);
+  if (!y||!m||!d) return null;
+  const target = Date.UTC(y, m-1, d);
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((target - today)/86400000);
+}
+
+function populateScadSelects() {
+  // Crea i chip filtro categoria
+  const tipi = [...new Set(allScadenze.map(s=>s.tipo))];
+  const chipsEl = document.getElementById('scadCatChips');
+  if (chipsEl) {
+    const icone = {
+      'Revisione periodica':'🔧','Tagliando':'🛢️','Bollo veicolo':'🚗',
+      'Assicurazione RCA':'🛡️','Revisione':'🔧'
+    };
+    let chips = `<button class="scad-chip active" onclick="setScadFilter('',this)" style="background:var(--green);color:#06120a;border:none;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer">Tutte</button>`;
+    tipi.forEach(t=>{
+      const ico = icone[t]||'📅';
+      chips += `<button class="scad-chip" onclick="setScadFilter('${t.replace(/'/g,"")}',this)" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">${ico} ${t}</button>`;
+    });
+    chipsEl.innerHTML = chips;
+  }
+}
+
+let _scadFilter = '';
+function setScadFilter(tipo, btn) {
+  _scadFilter = tipo;
+  document.querySelectorAll('.scad-chip').forEach(c=>{
+    c.style.background='var(--bg3)'; c.style.color='var(--text2)'; c.style.border='1px solid var(--border)';
+  });
+  if(btn){ btn.style.background='var(--green)'; btn.style.color='#06120a'; btn.style.border='none'; }
+  renderScadenze();
+}
+
+function renderScadenze() {
+  let data = allScadenze.slice();
+  if (_scadFilter) data = data.filter(s=>s.tipo===_scadFilter);
+
+  // KPI sempre sul totale
+  const scadute=allScadenze.filter(s=>s.stato==='scaduto').length;
+  const urgenti=allScadenze.filter(s=>s.stato==='urgente').length;
+  const prox=allScadenze.filter(s=>s.stato==='prox').length;
+  const ok=allScadenze.filter(s=>s.stato==='ok').length;
+  document.getElementById('k-sc-scadute').textContent=scadute;
+  document.getElementById('k-sc-urgenti').textContent=urgenti;
+  document.getElementById('k-sc-prox').textContent=prox;
+  document.getElementById('k-sc-ok').textContent=ok;
+  const badge=document.getElementById('scadBadge');
+  badge.textContent=scadute+urgenti;
+  badge.style.background=(scadute+urgenti)>0?'var(--red)':'var(--amber)';
+
+  // Raggruppa per fascia di urgenza
+  const fasce = [
+    {key:'scaduto', titolo:'SCADUTE', sub:'intervieni subito', emoji:'🔴', col:'#ff5252', glow:'rgba(255,82,82,.25)'},
+    {key:'urgente', titolo:'URGENTI', sub:'entro 30 giorni', emoji:'⚡', col:'#ff8a3d', glow:'rgba(255,138,61,.22)'},
+    {key:'prox',    titolo:'IN ARRIVO', sub:'entro 3 mesi', emoji:'⚠️', col:'#ffb938', glow:'rgba(232,184,75,.18)'},
+    {key:'ok',      titolo:'IN REGOLA', sub:'nessuna azione', emoji:'✅', col:'#6ee787', glow:'rgba(110,231,135,.15)'},
+  ];
+
+  const icone = {
+    'Revisione periodica':'🔧','Tagliando':'🛢️','Bollo veicolo':'🚗',
+    'Assicurazione RCA':'🛡️','Revisione':'🔧'
+  };
+  const mesIt = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+
+  let html = '';
+  fasce.forEach(f=>{
+    const items = data.filter(s=>s.stato===f.key).sort((a,b)=>(a.gg??99999)-(b.gg??99999));
+    if (!items.length) return;
+    html += `<div style="margin-bottom:22px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:34px;height:34px;border-radius:10px;background:${f.glow};display:flex;align-items:center;justify-content:center;font-size:17px">${f.emoji}</div>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:${f.col};letter-spacing:.02em">${f.titolo} <span style="font-size:12px;font-weight:600;color:var(--text2);background:var(--bg3);padding:1px 9px;border-radius:10px;margin-left:4px">${items.length}</span></div>
+          <div style="font-size:11px;color:var(--text3)">${f.sub}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">`;
+    items.forEach(s=>{
+      const ico = icone[s.tipo]||'📅';
+      let ggText, ggColor, ggBg;
+      if (s.gg===null||s.gg===undefined) { ggText='—'; ggColor='var(--text3)'; ggBg='var(--bg3)'; }
+      else if (s.gg<0) { ggText=Math.abs(s.gg)+'gg fa'; ggColor='#fff'; ggBg=f.col; }
+      else if (s.gg===0) { ggText='OGGI'; ggColor='#fff'; ggBg=f.col; }
+      else { ggText=s.gg+'gg'; ggColor=f.col; ggBg=f.glow; }
+      let dataFmt = '—';
+      if (s.pross) {
+        const [y,m,d] = s.pross.split('-').map(Number);
+        dataFmt = `${d} ${mesIt[m-1]} ${y}`;
+      }
+      html += `<div style="position:relative;background:linear-gradient(135deg,var(--bg2) 0%,var(--bg3) 100%);border:1px solid var(--border);border-radius:14px;padding:14px;overflow:hidden;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="position:absolute;top:0;left:0;width:100%;height:3px;background:${f.col}"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0">
+            <div style="width:36px;height:36px;border-radius:10px;background:${f.glow};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${ico}</div>
+            <div style="min-width:0">
+              <div style="font-weight:700;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.mNome||s.mId}</div>
+              <div style="font-size:10px;color:var(--text3)">${s.mId}</div>
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:${ggColor};background:${ggBg};padding:4px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0">${ggText}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border)">
+          <span style="font-size:11px;color:var(--text2);font-weight:600">${s.tipo}</span>
+          <span style="font-size:12px;color:var(--text);font-weight:700">${dataFmt}</span>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  if (!html) {
+    html = `<div style="text-align:center;padding:60px 20px;color:var(--text3)">
+      <div style="font-size:48px;margin-bottom:14px;opacity:.5">📅</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text2)">Nessuna scadenza registrata${_scadFilter?' in questa categoria':''}</div>
+      <div style="font-size:12px;margin-top:8px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.5">Compila le date di scadenza nei fogli Revisioni, Tagliandi e Bollo del tuo Excel per vederle apparire qui.</div>
+    </div>`;
+  }
+  document.getElementById('scadGrouped').innerHTML = html;
+}
+
+// ── Extend loadExcel to parse new sheets ──
+const _origLoad = loadExcel;
+// Override refreshAll to include new tabs
+const _origRefreshAll = refreshAll;
+refreshAll = function() {
+  _origRefreshAll();
+  if(allPrelievi.length) renderCarburante();
+  if(allScadenze.length) renderScadenze();
+};
+
+// Extend showTab to trigger render on first view
+const _origShowTab = showTab;
+showTab = function(id) {
+  _origShowTab(id);
+  if(id==='carburante'&&wb) renderCarburante();
+  if(id==='scadenze'&&wb) renderScadenze();
+};
+
+// Extend loadExcel parsing
+const _origParseForn = parseFornitori;
+parseFornitori = function(){
+  _origParseForn();
+  parseCarburante();
+  parseScadenze();
+};
+</script>
+</body>
+</html>
