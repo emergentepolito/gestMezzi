@@ -663,20 +663,34 @@ function loadExcel(file) {
     try {
       const data = new Uint8Array(e.target.result);
       wb = XLSX.read(data, { type:'array', cellDates: true });
-      parseMezzi(); parseStorico(); parseFornitori();
-      computeNextIntId();
+    } catch(err) {
+      alert('Impossibile leggere il file Excel. Assicurati che sia un file .xlsx valido.\n\nDettaglio: ' + err.message);
+      return;
+    }
+    // Ogni parsing è isolato: se un foglio ha problemi, gli altri caricano comunque
+    const problemi = [];
+    try { parseMezzi(); } catch(err){ problemi.push('Mezzi'); allMezzi = allMezzi||[]; }
+    try { parseStorico(); } catch(err){ problemi.push('Storico'); allStorico = allStorico||[]; }
+    try { parseFornitori(); } catch(err){ problemi.push('Fornitori/Carburante/Scadenze'); }
+    try { computeNextIntId(); } catch(err){}
+    try {
       document.getElementById('loadZone').style.display = 'none';
       document.getElementById('mainArea').classList.add('on');
       document.getElementById('xlStatus').innerHTML = `<span style="color:var(--green2)">✓ ${excelFileName}</span>`;
       document.getElementById('dlBtn').style.display = '';
       populateSelects();
-      setPeriod(12,'M'); // default 1 year
+      setPeriod(12,'M');
       refreshAll();
-      toast('✓ Excel caricato — ' + allMezzi.length + ' mezzi, ' + allStorico.length + ' interventi');
-    } catch(err) {
-      alert('Errore lettura file: ' + err.message);
+    } catch(err){
+      console.error(err);
+    }
+    if (problemi.length) {
+      toast('⚠ Caricato con avvisi su: ' + problemi.join(', '));
+    } else {
+      toast('✓ Excel caricato — ' + (allMezzi?allMezzi.length:0) + ' mezzi, ' + (allStorico?allStorico.length:0) + ' interventi');
     }
   };
+  reader.onerror = () => alert('Errore nella lettura del file dal dispositivo. Riprova.');
   reader.readAsArrayBuffer(file);
 }
 
@@ -2348,9 +2362,9 @@ showTab = function(id) {
 // Extend loadExcel parsing
 const _origParseForn = parseFornitori;
 parseFornitori = function(){
-  _origParseForn();
-  parseCarburante();
-  parseScadenze();
+  try { _origParseForn(); } catch(e){ console.error('Fornitori:',e); }
+  try { parseCarburante(); } catch(e){ console.error('Carburante:',e); }
+  try { parseScadenze(); } catch(e){ console.error('Scadenze:',e); }
 };
 </script>
 </body>
